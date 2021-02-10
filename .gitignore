@@ -44,6 +44,6 @@ mvnw.cmd
 logs/
 *.log
 
-
-
+### go mod ###
+*.mod
 
