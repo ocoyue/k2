@@ -3,12 +3,19 @@ use crate::model::{Command, Order, Side};
 use std::str::FromStr;
 
 pub fn parse_str(s: &str) -> Result<Command, ParseErr> {
-    let (cmd, rest) = s.split_once(',').ok_or_else(|| ParseErr::InvalidLine {
-        line: s.to_string(),
-    })?;
+    let (cmd, rest) = s
+        .split_once(',')
+        .map(|(cmd, rest)| (cmd.trim(), rest.trim()))
+        .ok_or_else(|| ParseErr::InvalidLine {
+            line: s.to_string(),
+        })?;
     match cmd {
         "ADD" | "add" => Ok(Command::ADD(Order::from_str(rest)?)),
-
+        // "CANCEL" | "cancel" => Ok(Command::CANCEL(888u32)),
+        "CANCEL" | "cancel" => Ok(Command::CANCEL(
+            rest.parse::<u32>()
+                .map_err(|err| ParseErr::Internal(err.to_string()))?,
+        )),
         _ => Err(ParseErr::InvalidCommand {
             cmd: cmd.to_string(),
         }),

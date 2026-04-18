@@ -40,7 +40,8 @@ impl Order {
         self.id
     }
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum Command {
     ADD(Order),
+    CANCEL(u32),
 }

@@ -9,20 +9,22 @@ pub enum ParseErr {
     #[error("Invalid order: {reason}")]
     InvalidOrder {reason : String},
 
-    #[error("Order not found: {order_id}")]
-    OrderNotFound {order_id : String},
-
     #[error("Invalid Side: {side}")]
     InvalidSide {side: String},
     
     #[error("Order already exists: {cmd}")]
     InvalidCommand {cmd: String},
 
+    #[error("{0}")]
+    Internal(String),
 }
 #[derive(Error, Debug,PartialEq)]
 pub enum ExecuteErr {
     #[error("Duplicate order id: {order_id}")]
     DuplicateOrderId { order_id : u32 },
+
+    #[error("Order not found: {order_id}")]
+    OrderNotFound {order_id : u32},
     
     #[error("{0}")]
     Internal(String),
