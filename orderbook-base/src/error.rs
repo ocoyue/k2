@@ -1,42 +1,54 @@
 use thiserror::Error;
 
-#[derive(Error,Debug,PartialEq)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ParseErr {
-    
-    #[error("invalid line: {line}")]
-    InvalidLine {line: String},
+    #[error("Invalid line: {line}")]
+    InvalidLine { line: String },
+
+    #[error("Invalid digit: {0}")]
+    InvalidDigit(String),
+
+    #[error("Invalid price: {0}")]
+    InvalidPrice(f64),
+
+    #[error("Invalid quantity: {0}")]
+    InvalidQuantity(u32),
+
+    #[error("Invalid parameters count: {line}")]
+    InvalidParaCount { line: String },
 
     #[error("Invalid order: {reason}")]
-    InvalidOrder {reason : String},
+    InvalidOrder { reason: String },
 
     #[error("Invalid Side: {side}")]
-    InvalidSide {side: String},
-    
+    InvalidSide { side: String },
+
     #[error("Order already exists: {cmd}")]
-    InvalidCommand {cmd: String},
+    InvalidCommand { cmd: String },
 
     #[error("{0}")]
     Internal(String),
 }
-#[derive(Error, Debug,PartialEq)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ExecuteErr {
     #[error("Duplicate order id: {order_id}")]
-    DuplicateOrderId { order_id : u32 },
+    DuplicateOrderId { order_id: u32 },
 
     #[error("Order not found: {order_id}")]
-    OrderNotFound {order_id : u32},
-    
+    OrderNotFound { order_id: u32 },
+
+    #[error("Quantity not enough: {0}")]
+    QuantityNotEnough(u32),
+
     #[error("{0}")]
     Internal(String),
-    
 }
 
-
-#[derive(Error, Debug,PartialEq)]
+#[derive(Error, Debug, PartialEq)]
 pub enum BusinessError {
     /// 解析阶段的错误
     #[error("Parse error: {0}")]
-    Parse(#[from] ParseErr),        // #[from] 自动支持 ? 转换
+    Parse(#[from] ParseErr), // #[from] 自动支持 ? 转换
 
     /// 执行命令阶段的错误
     #[error("Execute error: {0}")]
