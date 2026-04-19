@@ -3,8 +3,8 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Side {
-    BUY,
-    SELL,
+    Buy,
+    Sell,
 }
 #[derive(Debug, PartialEq, Clone)]
 pub struct Order {
@@ -36,9 +36,6 @@ impl Order {
     pub fn id(&self) -> u32 {
         self.id
     }
-    pub fn price(&self) -> f64 {
-        self.price
-    }
     pub fn qty(&self) -> u32 {
         self.qty
     }
@@ -53,23 +50,17 @@ impl Order {
         self.qty = qty
     }
 }
-// impl Display for Order {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         write!(f, "id: {}, price: {}, qty: {}", self.id, self.price, self.qty)
-//     }
-// }
+
 #[derive(Debug, PartialEq)]
 pub enum Command {
-    ADD(Order),
-    CANCEL(u32),
-    REDUCE { id: u32, qty: u32 },
-    GET(u32),
-    SUMMARY,
+    Add(Order),
+    Cancel(u32),
+    Reduce { id: u32, qty: u32 },
+    Get(u32),
+    Summary,
 }
 #[derive(Debug, PartialEq)]
 pub enum ExecuteResult {
-    Count(i32),
-    Exists(bool),
     Order(Order),
     Added,
     Canceled,
@@ -88,7 +79,7 @@ impl Display for Summary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "我是Summary :\ncount = {}\nbuy count = {}\nsell count = {}\ntotal_value = {}",
+            "Summary :\ncount = {}\nbuy count = {}\nsell count = {}\ntotal_value = {}",
             self.count, self.buy_count, self.sell_count, self.total_value
         )
     }
