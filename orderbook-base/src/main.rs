@@ -2,6 +2,8 @@ mod engine;
 mod error;
 mod model;
 mod parser;
+mod protocol;
+mod session;
 use crate::engine::*;
 use crate::error::*;
 use crate::model::*;
@@ -12,6 +14,7 @@ fn main() {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::protocol::wrt_resu;
     fn sample_orders() -> Vec<Order> {
         let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
         let o2 = Order::new(2, 88.0, 100, Side::Sell).unwrap();
@@ -46,7 +49,7 @@ mod tests {
             cmd1,
             Command::Add(Order::new(108, 88.0, 100, Side::Buy).unwrap()),
         );
-        assert_eq!(execute_cmd(cmd1, &mut orders), Ok(ExecuteResult::Added));
+        assert_eq!(execute_cmd(cmd1, &mut orders), Ok(ExeResult::Added));
 
         let cmd2: Command = Command::from_str(source_str).unwrap();
         assert_eq!(
@@ -55,7 +58,7 @@ mod tests {
         );
         assert_eq!(
             execute_cmd(cmd2, &mut orders),
-            Err(ExecuteErr::DuplicateOrderId { order_id: 108 })
+            Err(ExeErr::DuplicateOrderId { order_id: 108 })
         );
 
         let s3 = "add,108,88,100,buyx";
@@ -78,7 +81,7 @@ mod tests {
         let source_str = "cancel , 3";
         let cmd1 = Command::from_str(source_str).unwrap();
         assert_eq!(cmd1, Command::Cancel(3u32));
-        assert_eq!(execute_cmd(cmd1, &mut orders), Ok(ExecuteResult::Canceled));
+        assert_eq!(execute_cmd(cmd1, &mut orders), Ok(ExeResult::Canceled));
         assert_eq!(orders.len(), 4);
 
         let cmd2 = Command::from_str("cancel , -3");
@@ -100,28 +103,34 @@ mod tests {
         assert_eq!(cmd1, Ok(Command::Reduce { id: 1, qty: 50 }));
 
         let resu1 = execute_cmd(cmd1.unwrap(), &mut orders);
-        assert_eq!(resu1, Ok(ExecuteResult::Reduced));
+        assert_eq!(resu1, Ok(ExeResult::Reduced));
 
         let source_str2 = "REDUCE,2,999";
         let cmd2 = Command::from_str(source_str2);
         assert_eq!(cmd2, Ok(Command::Reduce { id: 2, qty: 999 }));
 
         let resu2 = execute_cmd(cmd2.unwrap(), &mut orders);
-        assert_eq!(resu2, Err(ExecuteErr::QuantityNotEnough(999)));
+        assert_eq!(
+            resu2,
+            Err(ExeErr::QuantityNotEnough {
+                request: 999,
+                available: 100
+            })
+        );
 
         let source_str3 = "REDUCE,3,100";
         let cmd3 = Command::from_str(source_str3);
         assert_eq!(cmd3, Ok(Command::Reduce { id: 3, qty: 100 }));
 
         let resu3 = execute_cmd(cmd3.unwrap(), &mut orders);
-        assert_eq!(resu3, Ok(ExecuteResult::Deleted));
+        assert_eq!(resu3, Ok(ExeResult::Clear));
 
         let source_str4 = "REDUCE,400,100";
         let cmd4 = Command::from_str(source_str4);
         assert_eq!(cmd4, Ok(Command::Reduce { id: 400, qty: 100 }));
 
         let resu4 = execute_cmd(cmd4.unwrap(), &mut orders);
-        assert_eq!(resu4, Err(ExecuteErr::OrderNotFound { order_id: 400 }));
+        assert_eq!(resu4, Err(ExeErr::OrderNotFound { order_id: 400 }));
 
         // println!("orders = {:?}", orders);
         println!("reduce_order -> Success");
@@ -138,14 +147,14 @@ mod tests {
 
         let resu1 = execute_cmd(cmd1.unwrap(), &mut orders);
         let reference_o = Order::new(3, 88.0, 100, Side::Sell).unwrap();
-        assert_eq!(resu1, Ok(ExecuteResult::Order(reference_o)));
+        assert_eq!(resu1, Ok(ExeResult::Order(reference_o)));
 
         let source_str2 = "GET , 2222";
         let cmd2 = Command::from_str(source_str2);
         assert_eq!(cmd2, Ok(Command::Get(2222)));
 
         let resu2 = execute_cmd(cmd2.unwrap(), &mut orders);
-        assert_eq!(resu2, Err(ExecuteErr::OrderNotFound { order_id: 2222 }));
+        assert_eq!(resu2, Err(ExeErr::OrderNotFound { order_id: 2222 }));
 
         let source_str2 = "GET , 2xx2";
         let cmd2 = Command::from_str(source_str2);
@@ -168,21 +177,45 @@ mod tests {
         assert_eq!(cmd1, Command::Summary);
 
         let smr = Summary {
-            count: 5,
+            orders_count: 5,
             buy_count: 3,
             sell_count: 2,
             total_value: 44000.0,
         };
-        assert_eq!(
-            execute_cmd(cmd1, &mut orders),
-            Ok(ExecuteResult::Summary(smr))
-        );
+        assert_eq!(execute_cmd(cmd1, &mut orders), Ok(ExeResult::Summary(smr)));
 
-        if let Ok(resu) = execute_cmd(cmd2, &mut orders) {
-            if let ExecuteResult::Summary(s) = resu {
-                println!("{}", s);
-            }
+        if let Ok(ExeResult::Summary(s)) = execute_cmd(cmd2, &mut orders) {
+            println!("{}", s);
         }
+
         println!("show summary -> Success");
+    }
+
+    #[test]
+    fn wrt_test() {
+        let mut orders = sample_orders();
+
+        let source_str = "add,108,88,100,buy";
+        let cmd1 = Command::from_str(source_str).unwrap();
+        let resu1: Result<ExeResult, ExeErr> = execute_cmd(cmd1, &mut orders);
+
+        wrt_resu(resu1.map_err(Into::into));
+
+        let resu2 = ExeResult::Summary(Summary {
+            orders_count: 5,
+            buy_count: 3,
+            sell_count: 2,
+            total_value: 44000.0,
+        });
+
+        wrt_resu(Ok(resu2));
+
+        let o = Order::new(3, 88.0, 100, Side::Sell).unwrap();
+        let resu3 = ExeResult::Order(o);
+        wrt_resu(Ok(resu3));
+
+        println!("write result -> Success");
+
+        // wrt_resu()
     }
 }

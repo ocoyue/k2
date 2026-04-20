@@ -6,6 +6,11 @@ pub enum Side {
     Buy,
     Sell,
 }
+impl Display for Side {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 #[derive(Debug, PartialEq, Clone)]
 pub struct Order {
     id: u32,
@@ -50,7 +55,15 @@ impl Order {
         self.qty = qty
     }
 }
-
+impl Display for Order {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ORDER id={} qty={} price={} side={}",
+            self.id, self.qty, self.price, self.side
+        )
+    }
+}
 #[derive(Debug, PartialEq)]
 pub enum Command {
     Add(Order),
@@ -60,17 +73,17 @@ pub enum Command {
     Summary,
 }
 #[derive(Debug, PartialEq)]
-pub enum ExecuteResult {
+pub enum ExeResult {
     Order(Order),
     Added,
     Canceled,
     Reduced,
-    Deleted,
+    Clear,
     Summary(Summary),
 }
 #[derive(PartialEq, Debug)]
 pub struct Summary {
-    pub count: u32,
+    pub orders_count: u32,
     pub buy_count: u32,
     pub sell_count: u32,
     pub total_value: f64,
@@ -79,8 +92,8 @@ impl Display for Summary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Summary :\ncount = {}\nbuy count = {}\nsell count = {}\ntotal_value = {}",
-            self.count, self.buy_count, self.sell_count, self.total_value
+            "SUMMARY orders_count = {} buy count = {} sell count = {} total_value = {}",
+            self.orders_count, self.buy_count, self.sell_count, self.total_value
         )
     }
 }
