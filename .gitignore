@@ -4,6 +4,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**
+orderbook-base/file/
+
 
 ### STS ###
 .apt_generated

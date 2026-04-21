@@ -37,10 +37,11 @@ pub(crate) fn reduce_order(
     orders: &mut Vec<Order>,
 ) -> Result<ExeResult, ExeErr> {
     let order_idx = orders.iter().position(|o| o.id() == id);
-    if let None = order_idx {
-        return Err(ExeErr::OrderNotFound { order_id: id });
-    }
-    let idx = order_idx.unwrap();
+    let idx = match order_idx {
+        Some(idx) => idx,
+        None => return Err(ExeErr::OrderNotFound { order_id: id }),
+    };
+
     if qty > orders[idx].qty() {
         Err(ExeErr::QuantityNotEnough {
             request: qty,

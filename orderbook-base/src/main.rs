@@ -1,20 +1,34 @@
+use std::fs::File;
+use std::io::{BufReader, BufWriter};
+use crate::model::{Order, Side};
+use crate::session::run_session;
+
 mod engine;
 mod error;
-mod line_io;
 mod model;
 mod parser;
 mod protocol;
 mod session;
 
-use crate::session::start_session;
-
 fn main() {
-    start_session();
+    let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
+    let o2 = Order::new(2, 88.0, 100, Side::Sell).unwrap();
+    let o3 = Order::new(3, 88.0, 100, Side::Sell).unwrap();
+    let o4 = Order::new(4, 88.0, 100, Side::Buy).unwrap();
+    let o5 = Order::new(5, 88.0, 100, Side::Buy).unwrap();
+    let mut orders = vec![o1, o2, o3, o4, o5];
+    
+    let input = File::open("./file/input.txt").expect("file not found");
+    let reader = BufReader::new(input);
+
+    let output = File::create("./file/output.txt").expect("could not create file");
+    let mut writer = BufWriter::new(output);
+
+    run_session(reader, &mut writer, &mut orders);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::engine::*;
     use crate::error::*;
     use crate::model::*;
@@ -204,7 +218,7 @@ mod tests {
         let cmd1 = Command::from_str(source_str).unwrap();
         let resu1: Result<ExeResult, ExeErr> = execute_cmd(cmd1, &mut orders);
 
-        wrt_exe_resu(resu1);
+        fmt_exe_resu(resu1);
 
         let resu2 = ExeResult::Summary(Summary {
             orders_count: 5,
@@ -213,14 +227,12 @@ mod tests {
             total_value: 44000.0,
         });
 
-        wrt_exe_resu(Ok(resu2));
+        fmt_exe_resu(Ok(resu2));
 
         let o = Order::new(3, 88.0, 100, Side::Sell).unwrap();
         let resu3 = ExeResult::Order(o);
-        wrt_exe_resu(Ok(resu3));
+        fmt_exe_resu(Ok(resu3));
 
         println!("write result -> Success");
-
-        // wrt_resu()
     }
 }

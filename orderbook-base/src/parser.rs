@@ -38,24 +38,6 @@ impl FromStr for Command {
                 cmd: cmd.to_string(),
             }),
         }
-
-        // let (cmd, rest) = s
-        //     .split_once(',')
-        //     .map(|(cmd, rest)| (cmd.trim(), rest.trim()))
-        //     .ok_or_else(|| ParseErr::InvalidLine {
-        //         line: s.to_string(),
-        //     })?;
-        //
-        // match cmd {
-        //     "ADD" | "add" => parse_add(rest),
-        //     "CANCEL" | "cancel" => parse_cancel(rest),
-        //     "REDUCE" | "reduce" => parse_reduce(rest),
-        //     "GET" | "get" => parse_get(rest),
-        //     // "SUMMARY" | "summary" => Ok(Command::SUMMARY),
-        //     _ => Err(ParseErr::InvalidCommand {
-        //         cmd: cmd.to_string(),
-        //     }),
-        // }
     }
 }
 impl FromStr for Order {
