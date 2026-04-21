@@ -1,20 +1,25 @@
 mod engine;
 mod error;
+mod line_io;
 mod model;
 mod parser;
 mod protocol;
 mod session;
-use crate::engine::*;
-use crate::error::*;
-use crate::model::*;
-use std::str::FromStr;
 
-fn main() {}
+use crate::session::start_session;
+
+fn main() {
+    start_session();
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::wrt_resu;
+    use crate::engine::*;
+    use crate::error::*;
+    use crate::model::*;
+    use crate::protocol::*;
+    use std::str::FromStr;
     fn sample_orders() -> Vec<Order> {
         let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
         let o2 = Order::new(2, 88.0, 100, Side::Sell).unwrap();
@@ -199,7 +204,7 @@ mod tests {
         let cmd1 = Command::from_str(source_str).unwrap();
         let resu1: Result<ExeResult, ExeErr> = execute_cmd(cmd1, &mut orders);
 
-        wrt_resu(resu1.map_err(Into::into));
+        wrt_exe_resu(resu1);
 
         let resu2 = ExeResult::Summary(Summary {
             orders_count: 5,
@@ -208,11 +213,11 @@ mod tests {
             total_value: 44000.0,
         });
 
-        wrt_resu(Ok(resu2));
+        wrt_exe_resu(Ok(resu2));
 
         let o = Order::new(3, 88.0, 100, Side::Sell).unwrap();
         let resu3 = ExeResult::Order(o);
-        wrt_resu(Ok(resu3));
+        wrt_exe_resu(Ok(resu3));
 
         println!("write result -> Success");
 

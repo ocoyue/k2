@@ -37,11 +37,4 @@ pub enum ExeErr {
     #[error("Quantity not enough: request={request} available={available}")]
     QuantityNotEnough { request: u32, available: u32 },
 }
-#[derive(Error, Debug, PartialEq)]
-pub enum BusinessErr {
-    #[error(transparent)]
-    ParseErr(#[from] ParseErr),
 
-    #[error(transparent)]
-    ExeErr(#[from] ExeErr),
-}

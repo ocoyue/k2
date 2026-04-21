@@ -10,7 +10,6 @@ pub fn execute_cmd(cmd: Command, orders: &mut Vec<Order>) -> Result<ExeResult, E
         Command::Summary => count_order(orders),
     }
 }
-
 pub(crate) fn add_order(order: Order, orders: &mut Vec<Order>) -> Result<ExeResult, ExeErr> {
     if orders.iter().any(|o| o.id() == order.id()) {
         return Err(ExeErr::DuplicateOrderId {
