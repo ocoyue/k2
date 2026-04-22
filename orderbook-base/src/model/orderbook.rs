@@ -1,14 +1,29 @@
 use crate::error::ParseErr;
+use crate::model::Side;
 use std::fmt::{Display, Formatter};
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Side {
-    Buy,
-    Sell,
+#[derive(Debug)]
+pub struct OrderBook {
+    orders: Vec<Order>,
 }
-impl Display for Side {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+
+impl OrderBook {
+    // pub fn new() -> Self {
+    //     Self { orders: Vec::new() }
+    // }
+
+    pub fn from_orders(orders: Vec<Order>) -> Self {
+        Self { orders }
+    }
+
+    pub fn orders(&self) -> &[Order] {
+        &self.orders
+    }
+
+    pub fn orders_mut(&mut self) -> &mut Vec<Order> {
+        &mut self.orders
+    }
+    pub fn len(&self) -> usize {
+        self.orders.len()
     }
 }
 #[derive(Debug, PartialEq, Clone)]
@@ -61,39 +76,6 @@ impl Display for Order {
             f,
             "ORDER id={} qty={} price={} side={}",
             self.id, self.qty, self.price, self.side
-        )
-    }
-}
-#[derive(Debug, PartialEq)]
-pub enum Command {
-    Add(Order),
-    Cancel(u32),
-    Reduce { id: u32, qty: u32 },
-    Get(u32),
-    Summary,
-}
-#[derive(Debug, PartialEq)]
-pub enum ExeResult {
-    Order(Order),
-    Added,
-    Canceled,
-    Reduced,
-    Clear,
-    Summary(Summary),
-}
-#[derive(PartialEq, Debug)]
-pub struct Summary {
-    pub orders_count: u32,
-    pub buy_count: u32,
-    pub sell_count: u32,
-    pub total_value: f64,
-}
-impl Display for Summary {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "SUMMARY orders_count = {} buy count = {} sell count = {} total_value = {}",
-            self.orders_count, self.buy_count, self.sell_count, self.total_value
         )
     }
 }
