@@ -23,17 +23,17 @@ pub enum ParseErr {
     #[error("Invalid Side: {side}")]
     InvalidSide { side: String },
 
-    #[error("Order already exists: {cmd}")]
+    #[error("Invalid command: {cmd}")]
     InvalidCommand { cmd: String },
 }
 #[derive(Error, Debug, PartialEq)]
-pub enum ExecuteErr {
+pub enum ExeErr {
     #[error("Duplicate order id: {order_id}")]
     DuplicateOrderId { order_id: u32 },
 
     #[error("Order not found: {order_id}")]
     OrderNotFound { order_id: u32 },
 
-    #[error("Quantity not enough: {0}")]
-    QuantityNotEnough(u32),
+    #[error("Quantity not enough: request={request} available={available}")]
+    QuantityNotEnough { request: u32, available: u32 },
 }
