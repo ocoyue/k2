@@ -1,20 +1,28 @@
 use crate::broker::Broker;
 use crate::command::BrokerCmd;
 use crate::message::Message;
+use crate::shared_demo::run_shared_state_demo;
 use std::sync::mpsc;
-use std::thread::spawn;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 
 mod broker;
 mod command;
 mod message;
-
+mod shared_demo;
 fn main() {
+    println!("=== channel owner demo ===");
     let mut broker = Broker::new();
     let (tx, rx) = mpsc::channel::<BrokerCmd>();
-    process_tx(tx);
-    process_rx(&mut broker, rx);
+    spawn(move || {
+        drive_commands(tx);
+    });
+    run_broker_loop(&mut broker, rx);
+    println!("=== shared state demo ===");
+    run_shared_state_demo();
 }
-fn process_tx(tx: mpsc::Sender<BrokerCmd>) {
+fn drive_commands(tx: mpsc::Sender<BrokerCmd>) {
+    let tx0 = tx.clone();
     let tx1 = tx.clone();
     let tx2 = tx.clone();
     let tx3 = tx.clone();
@@ -22,6 +30,12 @@ fn process_tx(tx: mpsc::Sender<BrokerCmd>) {
     let tx5 = tx.clone();
     // let tx6 = tx.clone();
 
+    let (reply_sender, receiver) = mpsc::channel::<Option<Message>>();
+    tx0.send(BrokerCmd::Consume(reply_sender)).unwrap();
+    match receiver.recv().unwrap() {
+        None => println!("Echo: Consume empty channel"),
+        Some(msg) => println!("Echo: Consume message: {:?}", msg),
+    }
     let h1 = spawn(move || {
         tx1.send(BrokerCmd::Publish(Message::new("hello 1")))
             .unwrap();
@@ -42,7 +56,7 @@ fn process_tx(tx: mpsc::Sender<BrokerCmd>) {
     let h4 = spawn(move || {
         let (reply_sender, receiver) = mpsc::channel::<Option<Message>>();
         tx4.send(BrokerCmd::Consume(reply_sender)).unwrap();
-        match receiver.recv().unwrap(){
+        match receiver.recv().unwrap() {
             None => println!("Echo: Consume empty channel"),
             Some(msg) => println!("Echo: Consume message: {:?}", msg),
         }
@@ -53,10 +67,11 @@ fn process_tx(tx: mpsc::Sender<BrokerCmd>) {
         done_rx.recv().unwrap();
         tx5.send(BrokerCmd::Shutdown).unwrap();
     });
-
+    h4.join().unwrap();
+    h5.join().unwrap();
     drop(tx);
 }
-fn process_rx(broker: &mut Broker, rx: mpsc::Receiver<BrokerCmd>) {
+fn run_broker_loop(broker: &mut Broker, rx: mpsc::Receiver<BrokerCmd>) {
     while let Ok(cmd) = rx.recv() {
         match cmd {
             BrokerCmd::Publish(msg) => {
