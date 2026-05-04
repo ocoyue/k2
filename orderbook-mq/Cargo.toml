@@ -1,5 +1,5 @@
 [package]
-name = "orderbook-tcp"
+name = "orderbook-mq"
 version = "0.1.0"
 edition = "2024"
 
