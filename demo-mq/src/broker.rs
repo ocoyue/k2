@@ -14,10 +14,10 @@ impl Broker {
     pub fn consume(&mut self) -> Option<Message> {
         self.queue.pop_front()
     }
-    pub fn len(&self) -> usize {
-        self.queue.len()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.queue.is_empty()
-    }
+    // pub fn len(&self) -> usize {
+    //     self.queue.len()
+    // }
+    // pub fn is_empty(&self) -> bool {
+    //     self.queue.is_empty()
+    // }
 }

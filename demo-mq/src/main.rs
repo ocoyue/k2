@@ -3,9 +3,7 @@ use crate::command::BrokerCmd;
 use crate::message::Message;
 use crate::shared_demo::run_shared_state_demo;
 use std::sync::mpsc;
-use std::thread::{sleep, spawn};
-use std::time::Duration;
-
+use std::thread::{spawn};
 mod broker;
 mod command;
 mod message;
