@@ -6,36 +6,62 @@ mod protocol;
 mod session;
 
 use crate::engine::run_orderbook_engine;
-use crate::model::command::OrderbookReq;
+use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
 use crate::model::{Order, Side};
 use crate::session::run_session;
-use std::io::BufReader;
-use std::net::{Shutdown, TcpListener, TcpStream};
-use std::sync::mpsc;
-use std::thread::spawn;
+use std::io::{BufReader};
+use std::net::{TcpListener, TcpStream};
+use std::sync::mpsc::{Receiver, Sender, channel};
+use std::thread::{spawn};
 
 fn main() -> std::io::Result<()> {
-    let mut orderbook = init_orderbook();
-    let mut stream = init_tcp_stream()?;
+    let orderbook = init_orderbook();
     let (tx, rx) = init_mpsc_channel();
-    let reader = BufReader::new(stream.try_clone()?);
-
-    spawn(move || {
-        run_orderbook_engine(&mut orderbook, rx);
+    let engine_loop = spawn(move || {
+        run_orderbook_engine(orderbook, rx);
     });
-    run_session(reader, &mut stream, tx)?;
-    stream.shutdown(Shutdown::Both)?;
+
+    let tcp_loop = spawn(move || {
+        run_tcp_session(tx.clone());
+    });
+
+    engine_loop.join().unwrap();
+    tcp_loop.join().unwrap();
     Ok(())
 }
 
-fn init_mpsc_channel() -> (mpsc::Sender<OrderbookReq>, mpsc::Receiver<OrderbookReq>) {
-    mpsc::channel::<OrderbookReq>()
+fn init_mpsc_channel() -> (Sender<EngineRequest>, Receiver<EngineRequest>) {
+    channel::<EngineRequest>()
 }
-fn init_tcp_stream() -> std::io::Result<TcpStream> {
-    let listener = TcpListener::bind("127.0.0.1:9000")?;
-    let (stream, _) = listener.accept()?;
-    Ok(stream)
+fn handle_client(
+    stream: TcpStream,
+    tx: Sender<EngineRequest>,
+) -> std::io::Result<()> {
+    let reader = BufReader::new(stream.try_clone()?);
+    let mut writer = stream;
+    run_session(reader, &mut writer, tx)
+}
+
+fn run_tcp_session(tx: Sender<EngineRequest>) {
+    let listener = TcpListener::bind("127.0.0.1:9000").unwrap();
+
+    loop {
+        match listener.accept() {
+            Ok((stream, _addr)) => {
+                let tx1 = tx.clone();
+
+                spawn(move || {
+                    if let Err(e) = handle_client(stream, tx1) {
+                        eprintln!("client session error: {e}");
+                    }
+                });
+            }
+            Err(e) => {
+                eprintln!("accept error: {e}");
+            }
+        }
+    }
 }
 fn init_orderbook() -> OrderBook {
     let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
@@ -51,18 +77,14 @@ fn init_orderbook() -> OrderBook {
 mod tests {
     use crate::engine::*;
     use crate::error::*;
+    use crate::init_orderbook;
     use crate::model::orderbook::OrderBook;
     use crate::model::*;
     use crate::protocol::*;
     use std::str::FromStr;
 
     fn sample_orderbook() -> OrderBook {
-        let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
-        let o2 = Order::new(2, 88.0, 100, Side::Sell).unwrap();
-        let o3 = Order::new(3, 88.0, 100, Side::Sell).unwrap();
-        let o4 = Order::new(4, 88.0, 100, Side::Buy).unwrap();
-        let o5 = Order::new(5, 88.0, 100, Side::Buy).unwrap();
-        OrderBook::from_orders(vec![o1, o2, o3, o4, o5])
+        init_orderbook()
     }
 
     #[test]

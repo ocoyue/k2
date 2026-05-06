@@ -9,7 +9,7 @@ pub fn fmt_exe_resu(rst: Result<ExeOk, ExeErr>) -> String {
         Ok(ExeOk::Clear) => "OK REDUCE AND CLEAR".to_string(),
         Ok(ExeOk::Summary(s)) => format!("OK {}", s),
         Ok(ExeOk::Order(o)) => format!("OK {}", o),
-        Ok(ExeOk::Shutdown) => "OK SHUTDOWN".to_string(),
+        // Ok(ExeOk::Shutdown) => "OK SHUTDOWN".to_string(),
         Err(exe_err) => format!("ERR {}", exe_err),
     }
 }

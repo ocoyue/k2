@@ -1,19 +1,18 @@
 use crate::error::ExeErr;
-use crate::model::command::OrderbookReq;
+use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
 use crate::model::{ExeOk, Order, OrderbookCmd, Side, Summary};
 use std::sync::mpsc;
 
-pub fn run_orderbook_engine(orderbook: &mut OrderBook, rx: mpsc::Receiver<OrderbookReq>) {
+pub fn run_orderbook_engine(mut orderbook: OrderBook, rx: mpsc::Receiver<EngineRequest>) {
     // multiple producer, single consumer
-    loop {
-        let req = rx.recv().unwrap();
-        let resu = execute_cmd(req.cmd, orderbook);
-        let is_shutdown = matches!(&resu, Ok(ExeOk::Shutdown));
+    while let Ok(req) = rx.recv() {
+        let resu = execute_cmd(req.cmd, &mut orderbook);
         req.reply.send(resu).unwrap();
-        if is_shutdown {
-            break;
-        }
+        // let is_shutdown = matches!(&resu, Ok(ExeOk::Shutdown));
+        // if is_shutdown {
+        //     break;
+        // }
     }
 }
 
@@ -24,7 +23,7 @@ pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Resul
         OrderbookCmd::Reduce { id, qty } => reduce_order(id, qty, orderbook),
         OrderbookCmd::Get(order_id) => get_order(order_id, orderbook),
         OrderbookCmd::Summary => count_order(orderbook),
-        OrderbookCmd::Shutdown => Ok(ExeOk::Shutdown),
+        // OrderbookCmd::Shutdown => Ok(ExeOk::Shutdown),
     }
 }
 pub(crate) fn add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {

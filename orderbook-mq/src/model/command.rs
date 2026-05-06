@@ -1,13 +1,13 @@
 use std::sync::mpsc::Sender;
 use crate::error::ExeErr;
 use crate::model::{ExeOk, Order};
-pub struct OrderbookReq {
+pub struct EngineRequest {
     pub cmd: OrderbookCmd,
     pub reply: Sender<Result<ExeOk, ExeErr>>,
 }
-impl OrderbookReq {
+impl EngineRequest {
     pub fn new(cmd: OrderbookCmd, reply: Sender<Result<ExeOk, ExeErr>>) -> Self {
-        OrderbookReq { cmd, reply }
+        EngineRequest { cmd, reply }
     }
 }
 
@@ -18,5 +18,5 @@ pub enum OrderbookCmd {
     Reduce { id: u32, qty: u32 },
     Get(u32),
     Summary,
-    Shutdown,
+    // Shutdown,
 }

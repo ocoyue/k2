@@ -30,11 +30,19 @@ impl FromStr for OrderbookCmd {
                     Ok(OrderbookCmd::Summary)
                 }
             }
+            // "SHUTDOWN" | "shutdown" => {
+            //     if rest.is_some() {
+            //         Err(ParseErr::InvalidLine {
+            //             line: line.to_string(),
+            //         })
+            //     } else {
+            //         Ok(OrderbookCmd::Shutdown)
+            //     }
+            // }
             "ADD" | "add" => parse_add(require_rest(rest, line)?),
             "CANCEL" | "cancel" => parse_cancel(require_rest(rest, line)?),
             "REDUCE" | "reduce" => parse_reduce(require_rest(rest, line)?),
             "GET" | "get" => parse_get(require_rest(rest, line)?),
-            "SHUTDOWN" | "shutdown" =>parse_shutdown(),
             _ => Err(ParseErr::InvalidCommand {
                 cmd: cmd.to_string(),
             }),
@@ -120,7 +128,4 @@ pub(crate) fn parse_get(s: &str) -> Result<OrderbookCmd, ParseErr> {
         .map_err(|err| ParseErr::InvalidDigit(err.to_string()))?;
 
     Ok(OrderbookCmd::Get(order_id))
-}
-pub(crate) fn parse_shutdown() -> Result<OrderbookCmd, ParseErr> {
-    Ok(OrderbookCmd::Shutdown)
 }

@@ -7,5 +7,5 @@ pub enum ExeOk {
     Reduced,
     Clear,
     Summary(Summary),
-    Shutdown,
+    // Shutdown,
 }
