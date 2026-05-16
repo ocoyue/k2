@@ -4,64 +4,41 @@ mod model;
 mod parser;
 mod protocol;
 mod session;
+mod tcp;
 
 use crate::engine::run_orderbook_engine;
 use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
 use crate::model::{Order, Side};
-use crate::session::run_session;
-use std::io::{BufReader};
-use std::net::{TcpListener, TcpStream};
-use std::sync::mpsc::{Receiver, Sender, channel};
-use std::thread::{spawn};
+use crate::tcp::{init_tcp, run_tcp_loop};
+use std::net::SocketAddr;
+use tokio::net::TcpStream;
+use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::{io, spawn};
+use crate::session::run_tcp_session;
 
-fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    // 1. Orderbook
     let orderbook = init_orderbook();
+    // 总接线
     let (tx, rx) = init_mpsc_channel();
-    let engine_loop = spawn(move || {
-        run_orderbook_engine(orderbook, rx);
-    });
+    // engine-loop
+    let _engine_handle = spawn(run_orderbook_engine(orderbook, rx));
+    // tcp-loop
+    tcp_loop(tx).await
+}
 
-    let tcp_loop = spawn(move || {
-        run_tcp_session(tx.clone());
-    });
-
-    engine_loop.join().unwrap();
-    tcp_loop.join().unwrap();
+async fn tcp_loop(tx: Sender<EngineRequest>) -> io::Result<()> {
+    // TCP Listener
+    let listener = init_tcp().await?;
+    // tcp-loop
+    let closure = move |stream: TcpStream, addr: SocketAddr| {
+        let tx = tx.clone();
+        run_tcp_session(stream, addr, tx)
+    };
+    run_tcp_loop(listener, closure).await?;
     Ok(())
-}
-
-fn init_mpsc_channel() -> (Sender<EngineRequest>, Receiver<EngineRequest>) {
-    channel::<EngineRequest>()
-}
-fn handle_client(
-    stream: TcpStream,
-    tx: Sender<EngineRequest>,
-) -> std::io::Result<()> {
-    let reader = BufReader::new(stream.try_clone()?);
-    let mut writer = stream;
-    run_session(reader, &mut writer, tx)
-}
-
-fn run_tcp_session(tx: Sender<EngineRequest>) {
-    let listener = TcpListener::bind("127.0.0.1:9000").unwrap();
-
-    loop {
-        match listener.accept() {
-            Ok((stream, _addr)) => {
-                let tx1 = tx.clone();
-
-                spawn(move || {
-                    if let Err(e) = handle_client(stream, tx1) {
-                        eprintln!("client session error: {e}");
-                    }
-                });
-            }
-            Err(e) => {
-                eprintln!("accept error: {e}");
-            }
-        }
-    }
 }
 fn init_orderbook() -> OrderBook {
     let o1 = Order::new(1, 88.0, 100, Side::Buy).unwrap();
@@ -72,6 +49,10 @@ fn init_orderbook() -> OrderBook {
 
     OrderBook::from_orders(vec![o1, o2, o3, o4, o5])
 }
+fn init_mpsc_channel() -> (Sender<EngineRequest>, Receiver<EngineRequest>) {
+    channel::<EngineRequest>(2048)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -280,3 +261,6 @@ mod tests {
         println!("write result -> Success");
     }
 }
+
+
+

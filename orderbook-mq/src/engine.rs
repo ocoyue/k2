@@ -1,19 +1,17 @@
+use tokio::io;
+use tokio::sync::mpsc::Receiver;
 use crate::error::ExeErr;
 use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
 use crate::model::{ExeOk, Order, OrderbookCmd, Side, Summary};
-use std::sync::mpsc;
 
-pub fn run_orderbook_engine(mut orderbook: OrderBook, rx: mpsc::Receiver<EngineRequest>) {
-    // multiple producer, single consumer
-    while let Ok(req) = rx.recv() {
+pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<EngineRequest>)->io::Result<()> {
+
+    while let Some(req) = rx.recv().await {
         let resu = execute_cmd(req.cmd, &mut orderbook);
-        req.reply.send(resu).unwrap();
-        // let is_shutdown = matches!(&resu, Ok(ExeOk::Shutdown));
-        // if is_shutdown {
-        //     break;
-        // }
+        let _ = req.reply.send(resu);
     }
+    Ok(())
 }
 
 pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {

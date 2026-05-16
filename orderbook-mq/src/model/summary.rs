@@ -11,7 +11,7 @@ impl Display for Summary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "SUMMARY orders_count = {} buy count = {} sell count = {} total_value = {}",
+            "SUMMARY orders_count = {} buy_count = {} sell_count = {} total_value = {}",
             self.orders_count, self.buy_count, self.sell_count, self.total_value
         )
     }

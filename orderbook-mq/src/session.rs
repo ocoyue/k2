@@ -1,45 +1,62 @@
-use crate::model::{ExeOk, OrderbookCmd};
-use crate::protocol::*;
-use std::io;
-use std::io::{BufRead, Write};
+use std::net::SocketAddr;
 use std::str::FromStr;
-use std::sync::mpsc;
-use std::sync::mpsc::{Sender};
-use crate::error::ExeErr;
+use tokio::io;
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::net::TcpStream;
+use tokio::sync::mpsc::{Sender};
+use tokio::sync::oneshot;
 use crate::model::command::EngineRequest;
+use crate::model::{OrderbookCmd};
+use crate::protocol::{fmt_exe_resu, fmt_parse_err};
 
-pub fn run_session<R: BufRead, W: Write>(
+pub(crate) async  fn run_session<R,W>(
     reader: R,
     // 函数接口中的 writer , 是抽象，传进来的可以是 stream, 内存buffer, 文件, stdout
-    writer: &mut W,
+    mut writer:  W,
     tx: Sender<EngineRequest>,
-    // done_tx: SyncSender<()>,
-) -> io::Result<()> {
-    for line_resu in reader.lines() {
-        let s = line_resu?;
-        let output = handle_line(&s, tx.clone());
+) -> io::Result<()>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+{
+    let buf_reader = BufReader::new(reader);
+    let mut lines = buf_reader.lines();
+    while let Some(line) = lines.next_line().await? {
+        let output = handle_line(&line, tx.clone()).await;
         if !output.is_empty() {
-            writeln!(writer, "{output}")?;
-            writer.flush()?;
+            writer.write_all(output.as_bytes()).await?;
+            writer.write_all(b"\n").await?;
         };
-        // if output.eq("OK SHUTDOWN"){
-        //     done_tx.send(()).unwrap();
-        //     break;
-        // }
     }
     Ok(())
 }
 
-fn handle_line(line: &str, tx:Sender<EngineRequest>) -> String {
+async fn handle_line(line: &str, tx:Sender<EngineRequest>) -> String {
     if line.trim().is_empty() {
         return String::new();
     }
     match OrderbookCmd::from_str(line) {
         Err(e) => fmt_parse_err(e),
         Ok(cmd) => {
-            let (reply,reply_re) = mpsc::channel::<Result<ExeOk, ExeErr>>();
-            tx.send(EngineRequest::new(cmd, reply)).unwrap();
-            fmt_exe_resu(reply_re.recv().unwrap())
+            let (reply_tx,reply_rx) = oneshot::channel();
+            if tx.send(EngineRequest::new(cmd,reply_tx)).await.is_err() {
+                return String::from("Err engine closed");
+            }
+            match reply_rx.await {
+                Ok(result) => fmt_exe_resu(result),
+                Err(_) => String::from("Err engine dropped reply"),
+            }
         }
     }
+}
+
+pub(crate) async fn run_tcp_session(
+    stream: TcpStream,
+    addr: SocketAddr,
+    tx: Sender<EngineRequest>,
+) -> io::Result<()> {
+    println!("tcp handler accepted connection from {}", addr);
+    let (read_half, write_half) = stream.into_split();
+    run_session(read_half,write_half,tx).await?;
+    Ok(())
 }
