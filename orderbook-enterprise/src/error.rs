@@ -11,6 +11,9 @@ pub enum ParseErr {
     #[error("Invalid price: {0}")]
     InvalidPrice(f64),
 
+    #[error("Invalid ticks: {0}")]
+    InvalidTicks(i64),
+
     #[error("Invalid quantity: {0}")]
     InvalidQuantity(u32),
 

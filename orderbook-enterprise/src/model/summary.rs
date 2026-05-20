@@ -5,7 +5,7 @@ pub struct Summary {
     pub orders_count: u32,
     pub buy_count: u32,
     pub sell_count: u32,
-    pub total_value: f64,
+    pub total_value: i64,
 }
 impl Display for Summary {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

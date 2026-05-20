@@ -10,12 +10,12 @@ use crate::engine::run_orderbook_engine;
 use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
 use crate::model::{Order, Side};
+use crate::session::run_tcp_session;
 use crate::tcp::{init_tcp, run_tcp_loop};
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio::{io, spawn};
-use crate::session::run_tcp_session;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -47,12 +47,11 @@ fn init_orderbook() -> OrderBook {
     let o4 = Order::new(4, 88.0, 100, Side::Buy).unwrap();
     let o5 = Order::new(5, 88.0, 100, Side::Buy).unwrap();
 
-    OrderBook::from_orders(vec![o1, o2, o3, o4, o5])
+    OrderBook::from_orders(vec![o1, o2, o3, o4, o5]).expect("init orderbook should be valid")
 }
 fn init_mpsc_channel() -> (Sender<EngineRequest>, Receiver<EngineRequest>) {
     channel::<EngineRequest>(2048)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -128,7 +127,6 @@ mod tests {
         let cmd1 = OrderbookCmd::from_str(source_str).unwrap();
         assert_eq!(cmd1, OrderbookCmd::Cancel(3u32));
         assert_eq!(execute_cmd(cmd1, &mut orderbook), Ok(ExeOk::Canceled));
-        assert_eq!(orderbook.len(), 4);
 
         let cmd2 = OrderbookCmd::from_str("cancel , -3");
         let err_info2 = "invalid digit found in string".to_string();
@@ -224,7 +222,7 @@ mod tests {
             orders_count: 5,
             buy_count: 3,
             sell_count: 2,
-            total_value: 44000.0,
+            total_value: 4400000,
         };
         assert_eq!(execute_cmd(cmd1, &mut orderbook), Ok(ExeOk::Summary(smr)));
 
@@ -249,7 +247,7 @@ mod tests {
             orders_count: 5,
             buy_count: 3,
             sell_count: 2,
-            total_value: 44000.0,
+            total_value: 4400000,
         });
 
         fmt_exe_resu(Ok(resu2));
@@ -260,7 +258,35 @@ mod tests {
 
         println!("write result -> Success");
     }
+
+    #[test]
+    fn test_add_order_to_bid_and_ask_book() {
+        let mut book = OrderBook::new();
+
+        book.add_order(Order::new(1, 88.00, 100, Side::Buy).unwrap())
+            .unwrap();
+        book.add_order(Order::new(2, 89.00, 100, Side::Buy).unwrap())
+            .unwrap();
+        book.add_order(Order::new(3, 90.00, 100, Side::Sell).unwrap())
+            .unwrap();
+        book.add_order(Order::new(4, 91.00, 100, Side::Sell).unwrap())
+            .unwrap();
+
+        assert_eq!(book.best_bid(), Some(Price::from_f64(89.00).unwrap()));
+        assert_eq!(book.best_ask(), Some(Price::from_f64(90.00).unwrap()));
+    }
+
+    #[test]
+    fn test_duplicate_order_id() {
+        let mut book = OrderBook::new();
+
+        book.add_order(Order::new(1, 88.00, 100, Side::Buy).unwrap())
+            .unwrap();
+
+        let err = book
+            .add_order(Order::new(1, 89.00, 100, Side::Sell).unwrap())
+            .unwrap_err();
+
+        assert_eq!(err, ExeErr::DuplicateOrderId { order_id: 1 });
+    }
 }
-
-
-

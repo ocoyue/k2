@@ -3,9 +3,9 @@ use tokio::sync::mpsc::Receiver;
 use crate::error::ExeErr;
 use crate::model::command::EngineRequest;
 use crate::model::orderbook::OrderBook;
-use crate::model::{ExeOk, Order, OrderbookCmd, Side, Summary};
+use crate::model::{ExeOk, Order, OrderbookCmd};
 
-pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<EngineRequest>)->io::Result<()> {
+pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<EngineRequest>) ->io::Result<()> {
 
     while let Some(req) = rx.recv().await {
         let resu = execute_cmd(req.cmd, &mut orderbook);
@@ -20,10 +20,42 @@ pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Resul
         OrderbookCmd::Cancel(order_id) => cancel_order(order_id, orderbook),
         OrderbookCmd::Reduce { id, qty } => reduce_order(id, qty, orderbook),
         OrderbookCmd::Get(order_id) => get_order(order_id, orderbook),
-        OrderbookCmd::Summary => count_order(orderbook),
+        OrderbookCmd::Summary => summarize_orders(orderbook),
         // OrderbookCmd::Shutdown => Ok(ExeOk::Shutdown),
     }
 }
+pub(crate) fn add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
+    orderbook.add_order(order)?;
+    Ok(ExeOk::Added)
+}
+pub(crate) fn cancel_order(
+    _target_id: u32,
+    _orderbook: &mut OrderBook,
+) -> Result<ExeOk, ExeErr> {
+    todo!("第25轮后续小轮实现新结构下的 cancel_order")
+}
+
+pub(crate) fn reduce_order(
+    _id: u32,
+    _qty: u32,
+    _orderbook: &mut OrderBook,
+) -> Result<ExeOk, ExeErr> {
+    todo!("第25轮后续小轮实现新结构下的 reduce_order")
+}
+
+pub(crate) fn get_order(
+    _target_id: u32,
+    _orderbook: &OrderBook,
+) -> Result<ExeOk, ExeErr> {
+    todo!("第25轮后续小轮实现新结构下的 get_order")
+}
+
+pub(crate) fn summarize_orders(
+    orderbook: &OrderBook,
+) -> Result<ExeOk, ExeErr> {
+    Ok(ExeOk::Summary( orderbook.summary()))
+}
+/*
 pub(crate) fn add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
     if orderbook.orders().iter().any(|o| o.id() == order.id()) {
         return Err(ExeErr::DuplicateOrderId {
@@ -75,10 +107,10 @@ pub(crate) fn get_order(target_id: u32, orderbook: &OrderBook) -> Result<ExeOk, 
         }),
     }
 }
-pub(crate) fn count_order(orderbook: &OrderBook) -> Result<ExeOk, ExeErr> {
+pub(crate) fn summarize_orders(orderbook: &OrderBook) -> Result<ExeOk, ExeErr> {
     let mut buy_count = 0;
     let mut sell_count = 0;
-    let mut total_value = 0.0;
+    let mut total_value = 0;
     for o in orderbook.orders().iter() {
         match o.side() {
             Side::Buy => buy_count += 1,
@@ -96,3 +128,4 @@ pub(crate) fn count_order(orderbook: &OrderBook) -> Result<ExeOk, ExeErr> {
 
     Ok(ExeOk::Summary(smr))
 }
+*/
