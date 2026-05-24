@@ -9,6 +9,11 @@ pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<Eng
 
     while let Some(req) = rx.recv().await {
         let resu = execute_cmd(req.cmd, &mut orderbook);
+        if cfg!(debug_assertions) {
+            orderbook
+                .check_invariants()
+                .expect("orderbook invariant violation");
+        }
         let _ = req.reply.send(resu);
     }
     Ok(())
@@ -17,9 +22,9 @@ pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<Eng
 pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
     match cmd {
         OrderbookCmd::Add(o) => add_order(o, orderbook),
-        OrderbookCmd::Cancel(order_id) => cancel_order(order_id, orderbook),
+        OrderbookCmd::Cancel(order_id) => cancel_order(orderbook,order_id),
         OrderbookCmd::Reduce { id, qty } => reduce_order(id, qty, orderbook),
-        OrderbookCmd::Get(order_id) => get_order(order_id, orderbook),
+        OrderbookCmd::Get(order_id) => get_order(orderbook,order_id),
         OrderbookCmd::Summary => summarize_orders(orderbook),
         // OrderbookCmd::Shutdown => Ok(ExeOk::Shutdown),
     }
@@ -29,10 +34,11 @@ pub(crate) fn add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk
     Ok(ExeOk::Added)
 }
 pub(crate) fn cancel_order(
-    _target_id: u32,
-    _orderbook: &mut OrderBook,
+    orderbook: &mut OrderBook,
+    target_id: u32,
 ) -> Result<ExeOk, ExeErr> {
-    todo!("第25轮后续小轮实现新结构下的 cancel_order")
+    orderbook.cancel_order(target_id)?;
+    Ok(ExeOk::Canceled)
 }
 
 pub(crate) fn reduce_order(
@@ -44,11 +50,13 @@ pub(crate) fn reduce_order(
 }
 
 pub(crate) fn get_order(
-    _target_id: u32,
-    _orderbook: &OrderBook,
+    orderbook: &OrderBook,
+    target_id: u32,
 ) -> Result<ExeOk, ExeErr> {
-    todo!("第25轮后续小轮实现新结构下的 get_order")
+    let order = orderbook.get_order(target_id)?;
+    Ok(ExeOk::Order(order))
 }
+
 
 pub(crate) fn summarize_orders(
     orderbook: &OrderBook,

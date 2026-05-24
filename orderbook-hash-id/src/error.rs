@@ -1,4 +1,5 @@
 use thiserror::Error;
+use crate::model::orderbook::OrderId;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ParseErr {
@@ -32,10 +33,10 @@ pub enum ParseErr {
 #[derive(Error, Debug, PartialEq, Clone)]
 pub enum ExeErr {
     #[error("Duplicate order id: {order_id}")]
-    DuplicateOrderId { order_id: u32 },
+    DuplicateOrderId { order_id: OrderId },
 
     #[error("Order not found: {order_id}")]
-    OrderNotFound { order_id: u32 },
+    OrderNotFound { order_id: OrderId },
 
     #[error("Quantity not enough: request={request} available={available}")]
     QuantityNotEnough { request: u32, available: u32 },

@@ -22,7 +22,7 @@ impl Price {
             Err(ParseErr::InvalidPrice(price))
         } else {
             let ticks = (price * 100.00).round() as i64;
-            Ok(Self::new(ticks))
+            Ok(Self::from_ticks(ticks)?)
         }
     }
 
