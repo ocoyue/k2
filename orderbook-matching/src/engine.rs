@@ -21,7 +21,7 @@ pub async fn run_orderbook_engine(mut orderbook: OrderBook, mut rx: Receiver<Eng
 
 pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
     match cmd {
-        OrderbookCmd::Add(o) => add_order(o, orderbook),
+        OrderbookCmd::Add(o) => handle_add_order(o, orderbook),
         OrderbookCmd::Cancel(order_id) => cancel_order(orderbook,order_id),
         OrderbookCmd::Reduce { id, qty } => reduce_order(id, qty, orderbook),
         OrderbookCmd::Get(order_id) => get_order(orderbook,order_id),
@@ -29,7 +29,7 @@ pub(crate) fn execute_cmd(cmd: OrderbookCmd, orderbook: &mut OrderBook) -> Resul
         // OrderbookCmd::Shutdown => Ok(ExeOk::Shutdown),
     }
 }
-pub(crate) fn add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
+pub(crate) fn handle_add_order(order: Order, orderbook: &mut OrderBook) -> Result<ExeOk, ExeErr> {
     orderbook.add_order(order)?;
     Ok(ExeOk::Added)
 }

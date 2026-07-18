@@ -1,7 +1,7 @@
-use crate::error::{ExeErr, ParseErr};
+use crate::error::{ExeErr};
 use crate::model::{Price, Side, Summary};
 use std::collections::{BTreeMap, HashMap, VecDeque};
-use std::fmt::{Display, Formatter};
+use crate::model::order::Order;
 
 pub type OrderId = u32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -221,78 +221,4 @@ impl Default for OrderBook {
         Self::new()
     }
 }
-#[derive(Debug, PartialEq, Clone)]
-pub struct Order {
-    id: u32,
-    price: Price,
-    qty: u32,
-    side: Side,
-}
-impl Order {
-    pub fn new(id: u32, price: f64, qty: u32, side: Side) -> Result<Order, ParseErr> {
-        if id == 0 {
-            return Err(ParseErr::InvalidOrder {
-                reason: "id must be positive".to_string(),
-            });
-        }
-        if qty == 0 {
-            return Err(ParseErr::InvalidQuantity(qty));
-        }
-        Ok(Order {
-            id,
-            price: Price::from_f64(price)?,
-            qty,
-            side,
-        })
-    }
-    pub fn id(&self) -> u32 {
-        self.id
-    }
-    pub fn price(&self) -> Price {
-        self.price
-    }
-    pub fn qty(&self) -> u32 {
-        self.qty
-    }
-    pub fn side(&self) -> Side {
-        self.side
-    }
-    pub fn value(&self) -> i64 {
-        self.price.ticks() * (self.qty as i64)
-    }
 
-    pub fn set_qty(&mut self, qty: u32) {
-        self.qty = qty
-    }
-}
-impl Display for Order {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ORDER id={} qty={} price={} side={}",
-            self.id, self.qty, self.price, self.side
-        )
-    }
-}
-#[test]
-fn test_summary_on_bid_ask_book() {
-    let mut book = OrderBook::new();
-
-    book.add_order(Order::new(1, 88.00, 100, Side::Buy).unwrap())
-        .unwrap();
-    book.add_order(Order::new(2, 89.00, 100, Side::Buy).unwrap())
-        .unwrap();
-    book.add_order(Order::new(3, 90.00, 100, Side::Sell).unwrap())
-        .unwrap();
-
-    let summary = book.summary();
-
-    assert_eq!(summary.orders_count, 3);
-    assert_eq!(summary.buy_count, 2);
-    assert_eq!(summary.sell_count, 1);
-
-    assert_eq!(
-        summary.total_value,
-        8800 * 100 + 8900 * 100 + 9000 * 100
-    );
-}
