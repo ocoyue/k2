@@ -4,4 +4,11 @@ use crate::model::order::Order;
 pub enum Command {
     Add(Order),
     Get(u32),
+    Cancel(u32),
+    Reduce {
+        id:u32,
+        qty:u64,
+    },
+    Summary,
+
 }

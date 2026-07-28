@@ -1,12 +1,12 @@
 use crate::error::order_error::OrderError;
 use crate::model::side::Side;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Order {
-    pub id: u32,
-    pub side: Side,
-    pub price: f64,
-    pub quantity: u64,
+    id: u32,
+    side: Side,
+    price: f64,
+    quantity: u64,
 }
 impl Order {
     pub fn new(id: u32, side: Side, price: f64, quantity: u64) -> Result<Self, OrderError> {
@@ -14,7 +14,7 @@ impl Order {
             return Err(OrderError::NegativePrice);
         }
         if quantity <= 0 {
-            return Err(OrderError::ZeroQuantity)
+            return Err(OrderError::ZeroQuantity);
         }
 
         Ok(Self {
@@ -24,7 +24,12 @@ impl Order {
             quantity,
         })
     }
-    pub fn id (&self) -> u32 { self.id }
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+    pub fn quantity(&self) -> u64 {
+        self.quantity
+    }
     pub fn is_buy(&self) -> bool {
         self.side.is_buy()
     }
