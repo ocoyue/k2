@@ -1,7 +1,7 @@
 use crate::error::order_error::OrderError;
 use crate::model::side::Side;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Order {
     id: u32,
     side: Side,
@@ -36,8 +36,13 @@ impl Order {
     pub fn is_sell(&self) -> bool {
         self.side.is_sell()
     }
-    pub fn reduce(&mut self, amount: u64) {
-        self.quantity = self.quantity.saturating_sub(amount);
+    pub fn reduce(&mut self, amount: u64) -> Result<u64, OrderError> {
+        if amount > self.quantity {
+            Err(OrderError::ReduceAmountExceedsRemaining)
+        } else {
+            self.quantity -= amount;
+            Ok(self.quantity)
+        }
     }
     pub fn is_filled(&self) -> bool {
         self.quantity == 0
@@ -85,10 +90,9 @@ mod tests {
     #[test]
     fn reduce_should_not_underflow() {
         let mut order = Order::new(1, Side::Buy, 100.25, 10).unwrap();
-
-        order.reduce(20);
-
-        assert_eq!(order.quantity, 0);
+        let result = order.reduce(20);
+        assert!(result.is_err());
+        assert_eq!(order.quantity(), 10);
     }
     #[test]
     fn zero_quantity_order_should_be_filled() {

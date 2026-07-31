@@ -1,5 +1,6 @@
 use crate::error::parse_error::ParseError;
 use crate::error::parse_error::ParseError::SideText;
+use std::str::FromStr;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Side {
@@ -20,14 +21,26 @@ impl Side {
             Side::Sell => true,
         }
     }
-    pub fn parse(text:&str) -> Result<Self, ParseError> {
+    pub fn parse(text: &str) -> Result<Self, ParseError> {
         match text.trim().to_uppercase().as_str() {
             "BUY" => Ok(Side::Buy),
             "SELL" => Ok(Side::Sell),
-            _  => Err(SideText),
+            _ => Err(SideText),
         }
     }
+}
+impl FromStr for Side {
+    type Err = ParseError;
 
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "BUY" => Ok(Side::Buy),
+
+            "SELL" => Ok(Side::Sell),
+
+            _ => Err(ParseError::SideText),
+        }
+    }
 }
 
 #[cfg(test)]

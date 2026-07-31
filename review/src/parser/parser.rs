@@ -6,8 +6,8 @@ use crate::model::side::Side;
 
 // "add ,1,buy,88.8,100"
 // "get, 1"
-pub(crate) fn parse_cmd(text: String) -> Result<Command, ParseError> {
-    let s = text.trim();
+pub(crate) fn parse_cmd(input : &str ) -> Result<Command, ParseError> {
+    let s = input.trim();
     let vec1: Vec<_> = s.split(',').collect();
     let head = vec1.first().unwrap().to_uppercase();
     match head.trim() {
