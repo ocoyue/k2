@@ -10,11 +10,11 @@ pub struct Order {
 }
 impl Order {
     pub fn new(id: u32, side: Side, price: f64, quantity: u64) -> Result<Self, OrderError> {
-        if price <= 0.0 {
-            return Err(OrderError::NegativePrice);
+        if !price.is_finite() || price <= 0.0 {
+            return Err(OrderError::InvalidPrice);
         }
         if quantity <= 0 {
-            return Err(OrderError::ZeroQuantity);
+            return Err(OrderError::InvalidQty);
         }
 
         Ok(Self {
@@ -37,6 +37,9 @@ impl Order {
         self.side.is_sell()
     }
     pub fn reduce(&mut self, amount: u64) -> Result<u64, OrderError> {
+        if amount == 0 {
+            return Err(OrderError::ZeroReduceAmount);
+        }
         if amount > self.quantity {
             Err(OrderError::ReduceAmountExceedsRemaining)
         } else {
@@ -48,32 +51,47 @@ impl Order {
         self.quantity == 0
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn create_test_order() -> Order {
+        Order::new(1, Side::Buy, 100.25, 10).unwrap()
+    }
+
     #[test]
     fn new_should_create_order() {
-        let order_res = Order::new(1, Side::Buy, 100.25, 10);
-
-        matches!(order_res, Ok(_));
-        let order = order_res.unwrap();
-        assert_eq!(order.id, 1);
-        assert_eq!(order.side, Side::Buy);
-        assert_eq!(order.price, 100.25);
-        assert_eq!(order.quantity, 10);
-    }
-    #[test]
-    fn id_should_return_borrowed_order_id() {
-        let order = Order::new(1, Side::Buy, 100.25, 10).unwrap();
+        let order = create_test_order();
 
         assert_eq!(order.id(), 1);
-        assert_eq!(order.quantity, 10);
+        assert_eq!(order.quantity(), 10);
+        assert!(order.is_buy());
     }
 
     #[test]
-    fn buy_order_should_be_buy() {
-        let order = Order::new(1, Side::Buy, 100.25, 10).unwrap();
+    fn new_should_reject_invalid_price() {
+        let result = Order::new(1, Side::Buy, 0.0, 10);
+
+        assert_eq!(result.unwrap_err(), OrderError::InvalidPrice);
+    }
+
+    #[test]
+    fn new_should_reject_nan_price() {
+        let result = Order::new(1, Side::Buy, f64::NAN, 10);
+
+        assert_eq!(result.unwrap_err(), OrderError::InvalidPrice);
+    }
+
+    #[test]
+    fn new_should_reject_zero_quantity() {
+        let result = Order::new(1, Side::Buy, 100.0, 0);
+
+        assert_eq!(result.unwrap_err(), OrderError::InvalidQty);
+    }
+
+    #[test]
+    fn buy_order_should_report_correct_side() {
+        let order = create_test_order();
 
         assert!(order.is_buy());
         assert!(!order.is_sell());
@@ -81,24 +99,47 @@ mod tests {
 
     #[test]
     fn reduce_should_decrease_quantity() {
-        let mut order = Order::new(1, Side::Buy, 100.25, 10).unwrap();
+        let mut order = create_test_order();
 
-        order.reduce(3);
+        let result = order.reduce(3);
 
-        assert_eq!(order.quantity, 7);
+        assert_eq!(result.unwrap(), 7);
+
+        assert_eq!(order.quantity(), 7);
     }
+
     #[test]
-    fn reduce_should_not_underflow() {
-        let mut order = Order::new(1, Side::Buy, 100.25, 10).unwrap();
+    fn reduce_should_fail_when_amount_exceeds_quantity() {
+        let mut order = create_test_order();
+
         let result = order.reduce(20);
-        assert!(result.is_err());
+
+        assert_eq!(
+            result.unwrap_err(),
+            OrderError::ReduceAmountExceedsRemaining
+        );
+
         assert_eq!(order.quantity(), 10);
     }
-    #[test]
-    fn zero_quantity_order_should_be_filled() {
-        let mut order = Order::new(1, Side::Sell, 101.50, 5).unwrap();
 
-        order.reduce(5);
+    #[test]
+    fn reduce_should_fail_when_amount_is_zero() {
+        let mut order = create_test_order();
+
+        let result = order.reduce(0);
+
+        assert_eq!(result.unwrap_err(), OrderError::ZeroReduceAmount);
+
+        assert_eq!(order.quantity(), 10);
+    }
+
+    #[test]
+    fn reduce_all_quantity_should_mark_filled() {
+        let mut order = create_test_order();
+
+        let result = order.reduce(10);
+
+        assert_eq!(result.unwrap(), 0);
 
         assert!(order.is_filled());
     }

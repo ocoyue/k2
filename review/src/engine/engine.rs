@@ -16,37 +16,31 @@ impl Engine {
         Self { orderbook: ob }
     }
     pub fn execute(&mut self, cmd: Command) -> Result<ExecResult, ExecErr> {
+        // println!("{:?}", cmd);
         match cmd {
             Command::Add(o) => {
                 let id = o.id();
-                match self.orderbook.add(o) {
-                    
-                    Ok(_) =>   Ok(ExecResult::AddSucc { id }),
-                    Err(e)=>Err(ExecErr::OrderBookError( e))
-                }
+                self.orderbook.add(o)?;
+                Ok(ExecResult::AddSucc { id })
             }
             Command::Get(id) => {
-                if let Some(o) = self.orderbook.get(id) {
-                    // 如何clone？
-                    Ok(ExecResult::FindSucc(o.clone()))
-                } else {
-                    Err(ExecErr::OrderBookError(OrderBookError::NotFound(id)))
-                }
+                let order = self
+                    .orderbook
+                    .get(id)
+                    .cloned()
+                    .ok_or(OrderBookError::NotFound(id))?;
+
+                Ok(ExecResult::FindSucc(order))
             }
-            Command::Cancel(id) =>  {
-                match self.orderbook.cancel(id) {
-                    Ok(_) => Ok(ExecResult::RemoveSucc {id}),
-                    Err(e)=>Err(ExecErr::OrderBookError( e))
-                }
-                
+            Command::Cancel(id) => {
+                self.orderbook.cancel(id)?;
+                Ok(ExecResult::RemoveSucc { id })
             }
-            Command::Reduce { id,qty } => {
-                match self.orderbook.reduce(id, qty) {
-                    Ok(rst) =>   Ok(rst),
-                    Err(e)=>Err(ExecErr::OrderBookError( e))
-                }
+            Command::Reduce { id, amount } => {
+                let remaining = self.orderbook.reduce(id, amount)?;
+                Ok(ExecResult::ReduceSucc { id, remaining })
             }
-            Command::Summary=> Ok(ExecResult::SummarySucc {count: self.orderbook.len()})
+            Command::Summary => Ok(ExecResult::SummarySucc(self.orderbook.summary()?)),
         }
     }
 }

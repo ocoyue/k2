@@ -21,24 +21,15 @@ impl Side {
             Side::Sell => true,
         }
     }
-    pub fn parse(text: &str) -> Result<Self, ParseError> {
-        match text.trim().to_uppercase().as_str() {
-            "BUY" => Ok(Side::Buy),
-            "SELL" => Ok(Side::Sell),
-            _ => Err(SideText),
-        }
-    }
 }
 impl FromStr for Side {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
+        match s.trim().to_ascii_uppercase().as_str() {
             "BUY" => Ok(Side::Buy),
-
             "SELL" => Ok(Side::Sell),
-
-            _ => Err(ParseError::SideText),
+            _ => Err(SideText),
         }
     }
 }
@@ -46,6 +37,12 @@ impl FromStr for Side {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn from_str_t() {
+        let s = "BUY";
+        s.parse::<Side>().unwrap();
+        assert_eq!(Side::Buy, s.parse::<Side>().unwrap());
+    }
     #[test]
     fn buy_side_should_be_buy() {
         assert!(Side::Buy.is_buy());

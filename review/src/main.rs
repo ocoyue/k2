@@ -2,15 +2,22 @@ use review::engine::Engine;
 use review::model::command::Command;
 use review::state_machine::orderbook::OrderBook;
 fn main() {
-    let book = OrderBook::new();
-    let mut engine: Engine = Engine::new(book);
-    let input1 = "ADD,1,BUY,100,10";
-    let cmd1 =
-        input1.parse::<Command>()
-            .unwrap();
-    let _ = engine.execute(cmd1);
-    println!("end")
+    let mut engine = Engine::new(OrderBook::new());
 
+    let inputs = vec![
+        "ADD,1,BUY,100,10",
+        "GET,1",
+        "REDUCE,1,3",
+        "SUMMARY",
+        "CANCEL,1",
+        "SUMMARY",
+    ];
 
+    for input in inputs {
+        let cmd = input.parse::<Command>().unwrap();
 
+        let result = engine.execute(cmd);
+
+        println!("{:?}", result);
+    }
 }
