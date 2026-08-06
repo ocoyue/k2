@@ -1,0 +1,21 @@
+[workspace]
+
+resolver = "2"
+
+members = [
+    "crates/model",
+    "crates/order-gateway",
+    "crates/market-gateway",
+    "crates/orderbook-engine",
+    "crates/market-data-engine",
+    "crates/protocol",
+    "crates/instrument",
+    "crates/event",
+    "crates/journal",
+    "crates/replay",
+    "crates/transport",
+    "crates/common",
+
+    "apps/order-server",
+    "apps/market-server",
+]
