@@ -1,3 +1,4 @@
+use crate::engine::request::EngineRequest;
 use crate::protocol::message::{Request, Response};
 
 use super::{Handler, HelloHandler};
@@ -15,7 +16,7 @@ impl HandlerRouter {
 }
 
 impl Handler for HandlerRouter {
-    fn handle(&self, request: Request) -> Response {
+    fn handle(&self, request: Request) -> EngineRequest {
         self.hello.handle(request)
     }
 }

@@ -1,3 +1,4 @@
+use crate::engine::request::EngineRequest;
 use crate::handler::handler::Handler;
 use crate::protocol::message::{Request, Response};
 
@@ -9,10 +10,8 @@ impl HelloHandler {
 }
 
 impl Handler for HelloHandler {
-    fn handle(&self, request: Request) -> Response {
-        match request {
-            Request::Hello { name } => Response::Greeting { name },
-        }
+    fn handle(&self, request: Request) -> EngineRequest {
+        EngineRequest{req:request}
     }
 }
 #[cfg(test)]
@@ -30,10 +29,8 @@ mod tests {
         let response = handler.handle(request);
 
         assert_eq!(
-            response,
-            Response::Greeting {
-                name: "Tom".to_string(),
-            }
+            response, 
+            EngineRequest { req: Request::Hello { name: "Tom".to_string() }, }
         );
     }
 
@@ -49,9 +46,8 @@ mod tests {
 
         assert_eq!(
             response,
-            Response::Greeting {
-                name: "Jack".to_string(),
-            }
+            EngineRequest { req: Request::Hello { name: "Jack".to_string() }, }
+
         );
     }
 }

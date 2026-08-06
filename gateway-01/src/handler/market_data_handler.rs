@@ -5,10 +5,4 @@ use super::handler::Handler;
 
 pub struct MarketDataHandler;
 
-impl Handler for MarketDataHandler {
-    fn handle(&self, request: Request) -> Response {
-        match request {
-            Request::Hello { name } => Response::Greeting { name },
-        }
-    }
-}
+
