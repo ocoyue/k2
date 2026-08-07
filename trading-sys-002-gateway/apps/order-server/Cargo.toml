@@ -1,0 +1,7 @@
+[package]
+name = "order-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+order-gateway.workspace = true
