@@ -1,0 +1,10 @@
+[package]
+name = "market-gateway"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+protocol.workspace = true
+instrument.workspace = true
+
+
