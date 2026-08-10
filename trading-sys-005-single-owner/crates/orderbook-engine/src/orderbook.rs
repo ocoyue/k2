@@ -1,11 +1,11 @@
 use model::Order;
 
 #[derive(Debug, Default)]
-pub struct MiniOrderBook {
+pub struct OrderBook {
     orders: Vec<Order>,
 }
 
-impl MiniOrderBook {
+impl OrderBook {
     pub fn new() -> Self {
         Self::default()
     }

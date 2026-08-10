@@ -15,9 +15,11 @@
 //!
 //! This is not a complete exchange matching engine.
 
-mod book;
-mod service;
-mod engine;
+mod engine_loop;
+mod engine_message;
+mod engine_proxy;
+mod orderbook;
 
-pub use book::MiniOrderBook;
-pub use service::{AddOrderResult, BookService, BookSnapshot};
+pub use engine_loop::start_engine;
+pub use engine_message::{AddOrderResult,BookSnapshot};
+pub use engine_proxy::EngineProxy;

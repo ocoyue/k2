@@ -1,5 +1,5 @@
 # Trading System
-## Trading System Architecture
+## Trading System Architecture(业务全景结构)
 
 ```text
                          Trading System
@@ -63,12 +63,12 @@
                           v
 
                        Client
-``` 
+```
 
 ## System Data Flow
 
 
-### Order Path
+### Order Path(订单流程路径)
 ```text
 Client  
 |  
@@ -84,7 +84,7 @@ Journal
 ```
 
 
-### Market Data Path
+### Market Data Path(行情流程路径)
 ```text
 OrderBook Engine  
 |  
@@ -103,6 +103,8 @@ Client
 Order processing and market data distribution
 are separated because they have different
 latency, consistency and throughput requirements.
+
+(订单处理与市场数据分发是分开的，因为它们对延迟、一致性和吞吐量有着不同的要求。)
 
 
 
@@ -141,7 +143,40 @@ latency, consistency and throughput requirements.
 
 ```
 
-## Order Flow
+# Version Summary
+
+###### Trading System 000 achitecture
+
+ld the Architecture for business。建立业务全景
+
+###### Trading System 001 tcp raw
+
+TCP RAW base
+
+###### Trading System 002 session gateway
+
+Gateway , split layer.
+
+###### Trading System 003 multiple connections
+
+Support multiple connection for clients
+
+###### Trading System 004 sharing memory
+
+Use Arc<Mutex<T>>  to resolve the trumble of "how many threads how many sets of data"
+
+###### Trading System 005 single-owner
+
+Arc<Mutex<T>> way is disadvantage. Switch single-owner through multiplt producer single consumer way .
+
+
+
+
+
+## Order Flow Evolution
+
+### TCP-2
+
 ```text
 Client
   |
@@ -183,7 +218,7 @@ OrderSession
 Client
 ```
 
-## TCP-7A Shared State Problem
+### TCP-3 Shared State Problem
 ```text
 Current runtime ownership:
 
@@ -280,7 +315,7 @@ Arc<Mutex<MiniOrderBook>>
 ```
 
 
-## TCP-7B Shared State Resolution
+### TCP-4 Shared State Resolution
 ```text
 TCP-7A:
 
@@ -321,4 +356,47 @@ as the correct solution.
 Its architectural limitations will be analyzed
 in TCP-8.
 ```
-.
+
+
+### TCP-5 single owner engine
+
+```text
+Client
+  |
+OrderSession
+  |
+OrderCodec
+  |
+OrderRequest
+  |
+SimpleOrderHandler
+  |
+EngineProxy
+  |
+EngineCommand
+  |
+mpsc Sender
+  |
+================ Thread Boundary ================
+  |
+mpsc Receiver
+  |
+Engine Loop
+  |
+OrderBook
+  |
+Engine Reply
+  |
+reply channel
+  |
+EngineProxy
+  |
+SimpleOrderHandler
+  |
+OrderResponse
+  |
+OrderCodec
+  |
+Client
+```
+

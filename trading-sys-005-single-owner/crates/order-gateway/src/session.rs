@@ -2,6 +2,7 @@ use crate::handler::OrderHandler;
 use protocol::{OrderCodec, OrderResponse};
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::TcpStream;
+use std::thread;
 
 pub struct OrderSession<H> {
     stream: TcpStream,
@@ -17,6 +18,7 @@ where
     }
 
     pub fn run(self) -> io::Result<()> {
+        println!("session thread: {:?}", thread::current().id());
         let mut reader = BufReader::new(self.stream.try_clone()?);
         let mut writer = self.stream;
 

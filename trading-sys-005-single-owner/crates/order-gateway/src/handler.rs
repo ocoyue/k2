@@ -1,4 +1,4 @@
-use orderbook_engine::BookService;
+use orderbook_engine::{AddOrderResult, BookSnapshot, EngineProxy};
 
 use protocol::{OrderRequest, OrderResponse, OrderView};
 
@@ -8,36 +8,32 @@ pub trait OrderHandler {
 
 #[derive(Debug)]
 pub struct SimpleOrderHandler {
-    service: BookService,
+    proxy: EngineProxy,
 }
 impl SimpleOrderHandler {
-    pub fn new(service: BookService) -> Self {
-        Self { service }
+    pub fn new(proxy: EngineProxy) -> Self {
+        Self { proxy }
     }
 }
 impl OrderHandler for SimpleOrderHandler {
     fn handle(&self, request: OrderRequest) -> OrderResponse {
         match request {
             OrderRequest::AddOrder { id, symbol, qty } => {
-                let result = self.service.add_order(id, symbol, qty);
-
-                OrderResponse::Accepted { id: result.id }
+                let AddOrderResult { id } = self.proxy.add_order(id, symbol, qty);
+                OrderResponse::Accepted { id }
             }
 
             OrderRequest::Book => {
-                let snapshot = self.service.get_book();
-
-                let orders = snapshot
-                    .orders
-                    .into_iter()
+                let BookSnapshot { orders } = self.proxy.get_book();
+                let orders_view = orders
+                    .iter()
                     .map(|order| OrderView {
                         id: order.id(),
                         symbol: order.symbol().to_owned(),
                         qty: order.qty(),
                     })
                     .collect();
-
-                OrderResponse::BookSnapshot { orders }
+                OrderResponse::BookSnapshot { order_view: orders_view }
             }
         }
     }
