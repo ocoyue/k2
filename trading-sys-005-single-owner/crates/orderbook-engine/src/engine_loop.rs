@@ -47,3 +47,21 @@ fn run_engine_loop(receiver: Receiver<EngineCommand>) {
         }
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::start_engine;
+
+    #[test]
+    fn cloned_proxies_access_same_engine_state() {
+        let proxy_a = start_engine();
+        let proxy_b = proxy_a.clone();
+
+        proxy_a.add_order(1, "BTCUSDT".to_string(), 10);
+
+        let snapshot = proxy_b.get_book();
+
+        assert_eq!(snapshot.orders.len(), 1);
+
+        assert_eq!(snapshot.orders[0].id(), 1);
+    }
+}

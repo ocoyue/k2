@@ -14,7 +14,7 @@ pub struct OrderView {
 pub enum OrderResponse {
     Accepted { id: u64 },
 
-    BookSnapshot { order_view: Vec<OrderView> },
+    BookSnapshot { orders: Vec<OrderView> },
 
     Error { message: String },
 }
@@ -56,7 +56,7 @@ impl OrderCodec {
                 format!("ACCEPTED id={id}\n")
             }
 
-            OrderResponse::BookSnapshot { order_view: orders } => {
+            OrderResponse::BookSnapshot { orders } => {
                 let body = orders
                     .iter()
                     .map(|order| format!("{}:{}:{}", order.id, order.symbol, order.qty))

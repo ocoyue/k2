@@ -1,6 +1,6 @@
-use crate::engine_message::{EngineCommand, AddOrderResult, BookSnapshot};
+use crate::engine_message::{AddOrderResult, BookSnapshot, EngineCommand};
+use std::sync::mpsc;
 use std::sync::mpsc::Sender;
-use std::sync::{mpsc};
 
 #[derive(Clone, Debug)]
 pub struct EngineProxy {
@@ -8,7 +8,7 @@ pub struct EngineProxy {
 }
 
 impl EngineProxy {
-    pub fn new(sender: Sender<EngineCommand>) -> Self {
+    pub(crate) fn new(sender: Sender<EngineCommand>) -> Self {
         Self { sender }
     }
     pub fn add_order(&self, id: u64, symbol: String, qty: u64) -> AddOrderResult {

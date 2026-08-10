@@ -25,7 +25,7 @@ impl OrderHandler for SimpleOrderHandler {
 
             OrderRequest::Book => {
                 let BookSnapshot { orders } = self.proxy.get_book();
-                let orders_view = orders
+                let orders = orders
                     .iter()
                     .map(|order| OrderView {
                         id: order.id(),
@@ -33,7 +33,7 @@ impl OrderHandler for SimpleOrderHandler {
                         qty: order.qty(),
                     })
                     .collect();
-                OrderResponse::BookSnapshot { order_view: orders_view }
+                OrderResponse::BookSnapshot { orders }
             }
         }
     }

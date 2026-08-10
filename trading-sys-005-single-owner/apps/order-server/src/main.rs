@@ -1,5 +1,5 @@
 use order_gateway::{OrderSession, SimpleOrderHandler};
-use orderbook_engine::{start_engine};
+use orderbook_engine::start_engine;
 use std::net::TcpListener;
 use std::thread;
 const ADDRESS: &str = "127.0.0.1:9000";

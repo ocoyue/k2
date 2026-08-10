@@ -21,5 +21,5 @@ mod engine_proxy;
 mod orderbook;
 
 pub use engine_loop::start_engine;
-pub use engine_message::{AddOrderResult,BookSnapshot};
+pub use engine_message::{AddOrderResult, BookSnapshot};
 pub use engine_proxy::EngineProxy;
