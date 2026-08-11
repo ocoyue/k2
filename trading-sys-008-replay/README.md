@@ -179,7 +179,7 @@ BOOK does not generate an Event and returns as_of_seq as the current state versi
 
 Add journal between OrderCommand and apply .
 
-
+###### Trading System 008 replay
 
 
 
