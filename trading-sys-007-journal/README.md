@@ -171,7 +171,9 @@ Arc<Mutex<T>> way is disadvantage. Switch single-owner through multiplt producer
 
 ###### Trading System 006
 
-todo!
+Introduce EngineEvent and Sequencer.
+State-changing Commands are converted into SequencedEvents before OrderBook::apply().
+BOOK does not generate an Event and returns as_of_seq as the current state version.
 
 ###### Trading System 007 journal
 
@@ -183,7 +185,7 @@ Add journal between OrderCommand and apply .
 
 ## Order Flow Evolution
 
-### TCP-2
+### TCP-2 tcp raw
 
 ```text
 Client
@@ -408,9 +410,86 @@ OrderCodec
 Client
 ```
 
-### Trading-sys-006
 
-### Trading-sys-007
+
+### Trading-sys-006-event + sequencer
+
+```text
+                    Gateway Threads
+                          |
+                          v
+                     EngineProxy
+                          |
+                          v
+                        mpsc
+                          |
+================ Engine Thread ================
+                          |
+                          v
+                   EngineCommand
+                          |
+                          v
+                    EngineEvent
+                          |
+                          v
+                     Sequencer
+                          |
+                          v
+                 SequencedEvent
+                          |
+                          v
+                 OrderBook::apply
+                          |
+                          v
+                last_applied_seq
+                          |
+                          v
+                       Reply
+
+
+State-changing command:
+
+ADD
+ |
+ v
+EngineCommand::AddOrder
+ |
+ v
+EngineEvent::OrderAdded
+ |
+ v
+Sequencer
+ |
+ v
+SequencedEvent { seq_id, event }
+ |
+ v
+OrderBook::apply()
+ |
+ v
+last_applied_seq = seq_id
+
+
+Read-only command:
+
+BOOK
+ |
+ v
+EngineCommand::GetBook
+ |
+ v
+OrderBook::snapshot()
+ |
+ v
+BookSnapshot {
+    as_of_seq: last_applied_seq
+ }
+
+BOOK does not generate an Event
+and does not consume a seq_id.
+```
+
+### Trading-sys-007-journal
 
 ```test
                     Gateway Threads
