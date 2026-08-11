@@ -1,0 +1,43 @@
+[workspace]
+
+resolver = "2"
+
+members = [
+    "crates/model",
+    "crates/order-gateway",
+    "crates/market-gateway",
+    "crates/orderbook-engine",
+    "crates/market-data-engine",
+    "crates/protocol",
+    "crates/instrument",
+    "crates/event",
+    "crates/journal",
+    "crates/replay",
+    "crates/transport",
+    "crates/common",
+
+    "apps/order-server",
+    "apps/market-server", "apps/test-client",
+]
+[workspace.dependencies]
+protocol = {
+    path = "crates/protocol"
+}
+order-gateway = {
+    path = "crates/order-gateway"
+}
+market-gateway = {
+    path = "crates/market-gateway"
+}
+instrument = {
+    path = "crates/instrument"
+}
+model = {
+    path = "crates/model"
+}
+orderbook-engine = {
+    path = "crates/orderbook-engine"
+}
+event = {
+    path = "crates/event"
+}
