@@ -3,10 +3,11 @@ use orderbook_engine::start_engine;
 use std::net::TcpListener;
 use std::thread;
 const ADDRESS: &str = "127.0.0.1:9000";
+const JOURNAL_PATH: &str = "data/order.journal";
 fn main() {
     let listener = TcpListener::bind(ADDRESS).expect("failed to bind order server");
+    let engine_proxy = start_engine(JOURNAL_PATH).expect("failed to start engine with journal");
     println!("order server listening on {ADDRESS}");
-    let engine_proxy = start_engine();
     for incoming in listener.incoming() {
         match incoming {
             Ok(stream) => {

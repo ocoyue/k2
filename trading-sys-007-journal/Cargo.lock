@@ -17,6 +17,9 @@ version = "0.1.0"
 [[package]]
 name = "journal"
 version = "0.1.0"
+dependencies = [
+ "event",
+]
 
 [[package]]
 name = "market-data-engine"
@@ -63,6 +66,7 @@ name = "orderbook-engine"
 version = "0.1.0"
 dependencies = [
  "event",
+ "journal",
  "model",
 ]
 

@@ -1,25 +1,29 @@
 use crate::engine_message::{AddOrderResult, BookSnapshot, EngineCommand};
+use std::path::Path;
 
 use crate::EngineProxy;
 use crate::orderbook::OrderBook;
 
 use event::{EngineEvent, Sequencer};
 
+use journal::FileJournal;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
-use std::thread;
+use std::{io, thread};
 
-pub fn start_engine() -> EngineProxy {
+pub fn start_engine(journal_path: impl AsRef<Path>) -> io::Result<EngineProxy> {
+    let journal = FileJournal::create_new(journal_path)?;
+
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        run_engine_loop(rx);
+        run_engine_loop(rx, journal);
     });
 
-    EngineProxy::new(tx)
+    Ok(EngineProxy::new(tx))
 }
 
-fn run_engine_loop(receiver: Receiver<EngineCommand>) {
+fn run_engine_loop(receiver: Receiver<EngineCommand>, mut journal: FileJournal) {
     println!("engine thread: {:?}", thread::current().id());
 
     let mut book = OrderBook::new();
@@ -40,6 +44,11 @@ fn run_engine_loop(receiver: Receiver<EngineCommand>) {
 
                 let event = EngineEvent::OrderAdded { id, symbol, qty };
                 let seq_event = sequencer.assign_sequence(event);
+
+                journal.append(&seq_event).expect(
+                    "journal append failed; \
+             engine cannot continue safely",
+                );
 
                 println!(
                     "engine {:?}: EVENT seq={} {:?}",
@@ -84,7 +93,7 @@ mod tests {
 
     #[test]
     fn book_snapshot_reports_last_applied_event_seq() {
-        let proxy = start_engine();
+        let proxy = start_engine("data/order.journal").unwrap();
 
         proxy.add_order(1, "BTCUSDT".to_string(), 10);
 

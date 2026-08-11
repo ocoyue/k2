@@ -169,6 +169,14 @@ Use Arc<Mutex<T>>  to resolve the trumble of "how many threads how many sets of 
 
 Arc<Mutex<T>> way is disadvantage. Switch single-owner through multiplt producer single consumer way .
 
+###### Trading System 006
+
+todo!
+
+###### Trading System 007 journal
+
+Add journal between OrderCommand and apply .
+
 
 
 
@@ -398,5 +406,51 @@ OrderResponse
 OrderCodec
   |
 Client
+```
+
+### Trading-sys-006
+
+### Trading-sys-007
+
+```test
+                    Gateway Threads
+                          |
+                          v
+                     EngineProxy
+                          |
+                          v
+                        mpsc
+                          |
+================ Engine Thread ================
+                          |
+                          v
+                   EngineCommand
+                          |
+                          v
+                    EngineEvent
+                          |
+                          v
+                     Sequencer
+                          |
+                          v
+                 SequencedEvent
+                          |
+                     append
+                          |
+                          v
+                      Journal
+                          |
+                     sync_data
+                          |
+                    durable OK
+                          |
+                          v
+                 OrderBook::apply
+                          |
+                          v
+                last_applied_seq
+                          |
+                          v
+                       Reply
 ```
 
