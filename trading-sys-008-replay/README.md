@@ -533,3 +533,48 @@ and does not consume a seq_id.
                        Reply
 ```
 
+### Trading-sys-008-replay
+```text
+==================== STARTUP ====================
+
+                    Journal File
+                         |
+                         v
+                      Reader
+                         |
+                         v
+                  SequencedEvent
+                         |
+                         v
+                       Replay
+                         |
+                         v
+                 OrderBook::apply
+                         |
+                         v
+              restored OrderBook
+                         |
+                         +--> last_applied_seq
+                         |
+                         +--> Sequencer resumes
+
+
+==================== LIVE =======================
+
+                    EngineCommand
+                         |
+                         v
+                    EngineEvent
+                         |
+                         v
+                     Sequencer
+                         |
+                         v
+                 SequencedEvent
+                         |
+                         v
+                      Journal
+                         |
+                         v
+                 OrderBook::apply
+```

@@ -20,6 +20,11 @@ impl Sequencer {
 
         SequencedEvent::new(seq_id, event)
     }
+    pub fn resume_after(last_seq: u64) -> Self {
+        let next_seq = last_seq.checked_add(1).expect("event sequence overflow");
+
+        Self { next_seq }
+    }
 }
 
 impl Default for Sequencer {

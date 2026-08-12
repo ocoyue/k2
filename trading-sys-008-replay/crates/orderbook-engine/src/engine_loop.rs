@@ -6,31 +6,42 @@ use crate::orderbook::OrderBook;
 
 use event::{EngineEvent, Sequencer};
 
-use journal::FileJournal;
+use journal::JournalFile;
+use replay::replay_journal;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::{io, thread};
 
 pub fn start_engine(journal_path: impl AsRef<Path>) -> io::Result<EngineProxy> {
-    let journal = FileJournal::create_new(journal_path)?;
+    let journal_path = journal_path.as_ref();
+
+    let mut book = OrderBook::new();
+
+    let last_applied_seq = replay_journal(journal_path, |sequenced_event| {
+        book.apply(sequenced_event.event());
+    })?;
+    println!("replay completed: as_of_seq={}", last_applied_seq);
+    let sequencer = Sequencer::resume_after(last_applied_seq);
+
+    let journal = JournalFile::open_or_create(journal_path)?;
 
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        run_engine_loop(rx, journal);
+        run_engine_loop(rx, journal, book, sequencer, last_applied_seq);
     });
 
     Ok(EngineProxy::new(tx))
 }
 
-fn run_engine_loop(receiver: Receiver<EngineCommand>, mut journal: FileJournal) {
+fn run_engine_loop(
+    receiver: Receiver<EngineCommand>,
+    mut journal: JournalFile,
+    mut book: OrderBook,
+    mut sequencer: Sequencer,
+    mut last_applied_seq: u64,
+) {
     println!("engine thread: {:?}", thread::current().id());
-
-    let mut book = OrderBook::new();
-
-    let mut sequencer = Sequencer::new(); // init sequencer seq=1
-
-    let mut last_applied_seq = 0_u64;
 
     while let Ok(command) = receiver.recv() {
         match command {

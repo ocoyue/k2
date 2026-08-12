@@ -1,4 +1,4 @@
-mod file_journal;
-mod record;
+mod journal_codec;
+mod journal_file;
 
-pub use file_journal::FileJournal;
+pub use journal_file::JournalFile;

@@ -44,3 +44,6 @@ event = {
 journal = {
     path = "crates/journal"
 }
+replay = {
+    path = "crates/replay"
+}
