@@ -40,3 +40,66 @@ pub fn replay_journal(
 
     Ok(last_applied_seq)
 }
+#[cfg(test)]
+mod tests {
+    use super::replay_journal;
+
+    use event::{EngineEvent, SequencedEvent};
+
+    use journal::JournalFile;
+
+    use std::fs::remove_file;
+
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn replay_restores_events_in_sequence() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        let path = std::env::temp_dir().join(format!("replay-{unique}.journal"));
+
+        let mut journal = JournalFile::create_new(&path).unwrap();
+
+        journal
+            .append(&SequencedEvent::new(
+                1,
+                EngineEvent::OrderAdded {
+                    id: 1,
+                    symbol: "BTCUSDT".to_string(),
+                    qty: 10,
+                },
+            ))
+            .unwrap();
+
+        journal
+            .append(&SequencedEvent::new(
+                2,
+                EngineEvent::OrderAdded {
+                    id: 2,
+                    symbol: "ETHUSDT".to_string(),
+                    qty: 20,
+                },
+            ))
+            .unwrap();
+
+        drop(journal);
+
+        let mut ids = Vec::new();
+
+        let last_seq = replay_journal(&path, |seq_event| match seq_event.event() {
+            EngineEvent::OrderAdded { id, .. } => {
+                ids.push(*id);
+            }
+        })
+        .unwrap();
+
+        assert_eq!(ids, vec![1, 2]);
+
+        assert_eq!(last_seq, 2);
+
+        remove_file(path).unwrap();
+    }
+}
