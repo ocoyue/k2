@@ -1,4 +1,5 @@
 # Trading System
+
 ## Trading System Architecture(业务全景结构)
 
 ```text
@@ -70,30 +71,30 @@
 
 ### Order Path(订单流程路径)
 ```text
-Client  
-|  
-Order Gateway  
-|  
-Protocol  
-|  
-OrderBook Engine  
-|  
-Event  
-|  
+Client
+|
+Order Gateway
+|
+Protocol
+|
+OrderBook Engine
+|
+Event
+|
 Journal
 ```
 
 
 ### Market Data Path(行情流程路径)
 ```text
-OrderBook Engine  
-|  
-Event  
-|  
-Market Data Engine  
-|  
-Market Gateway  
-|  
+OrderBook Engine
+|
+Event
+|
+Market Data Engine
+|
+Market Gateway
+|
 Client
 ```
 
@@ -180,7 +181,7 @@ Add journal between OrderCommand and apply .
 Restore OrderBook, last_applied_seq and Sequencer from persisted SequencedEvents before live processing begins.
 Existing Journal can now be replayed and safely continued, while sequence gaps reject startup.
 
-###### Trading System 009 snapshot recovery 
+###### Trading System 009 snapshot recovery
 
 
 

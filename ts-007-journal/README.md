@@ -1,4 +1,5 @@
 # Trading System
+
 ## Trading System Architecture(业务全景结构)
 
 ```text
@@ -70,30 +71,30 @@
 
 ### Order Path(订单流程路径)
 ```text
-Client  
-|  
-Order Gateway  
-|  
-Protocol  
-|  
-OrderBook Engine  
-|  
-Event  
-|  
+Client
+|
+Order Gateway
+|
+Protocol
+|
+OrderBook Engine
+|
+Event
+|
 Journal
 ```
 
 
 ### Market Data Path(行情流程路径)
 ```text
-OrderBook Engine  
-|  
-Event  
-|  
-Market Data Engine  
-|  
-Market Gateway  
-|  
+OrderBook Engine
+|
+Event
+|
+Market Data Engine
+|
+Market Gateway
+|
 Client
 ```
 

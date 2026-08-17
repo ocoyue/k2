@@ -1,4 +1,5 @@
 # Trading System
+
 ## Trading System Architecture
 
 ```text
@@ -63,37 +64,37 @@
                           v
 
                        Client
-``` 
+```
 
 ## System Data Flow
 
 
 ### Order Path
 ```text
-Client  
-|  
-Order Gateway  
-|  
-Protocol  
-|  
-OrderBook Engine  
-|  
-Event  
-|  
+Client
+|
+Order Gateway
+|
+Protocol
+|
+OrderBook Engine
+|
+Event
+|
 Journal
 ```
 
 
 ### Market Data Path
 ```text
-OrderBook Engine  
-|  
-Event  
-|  
-Market Data Engine  
-|  
-Market Gateway  
-|  
+OrderBook Engine
+|
+Event
+|
+Market Data Engine
+|
+Market Gateway
+|
 Client
 ```
 

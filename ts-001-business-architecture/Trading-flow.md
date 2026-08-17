@@ -62,37 +62,37 @@
                           v
 
                        Client
-``` 
+```
 
 ## System Data Flow
 
 
 ### Order Path
 
-Client  
-|  
-Order Gateway  
-|  
-Protocol  
-|  
-OrderBook Engine  
-|  
-Event  
-|  
-Journal  
+Client
+|
+Order Gateway
+|
+Protocol
+|
+OrderBook Engine
+|
+Event
+|
+Journal
 
 
 ### Market Data Path
 
-OrderBook Engine  
-|  
-Event  
-|  
-Market Data Engine  
-|  
-Market Gateway  
-|  
-Client  
+OrderBook Engine
+|
+Event
+|
+Market Data Engine
+|
+Market Gateway
+|
+Client
 
 
 ### Design Principle
@@ -100,3 +100,5 @@ Client
 Order processing and market data distribution
 are separated because they have different
 latency, consistency and throughput requirements.
+
+.
