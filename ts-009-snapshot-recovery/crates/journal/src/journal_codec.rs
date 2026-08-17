@@ -59,23 +59,15 @@ pub(crate) fn decode_record(record: &str) -> io::Result<SequencedEvent> {
 
 #[test]
 fn decode_record_restores_event() {
-    let event =
-        decode_record(
-            "7|ORDER_ADDED|100|BTCUSDT|10"
-        )
-            .unwrap();
+    let event = decode_record("7|ORDER_ADDED|100|BTCUSDT|10").unwrap();
 
-    assert_eq!(
-        event.seq_id(),
-        7
-    );
+    assert_eq!(event.seq_id(), 7);
 
     assert_eq!(
         event.event(),
         &EngineEvent::OrderAdded {
             id: 100,
-            symbol:
-            "BTCUSDT".to_string(),
+            symbol: "BTCUSDT".to_string(),
             qty: 10,
         }
     );

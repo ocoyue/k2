@@ -84,6 +84,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "snapshot"
+version = "0.1.0"
+dependencies = [
+ "model",
+]
+
+[[package]]
 name = "test-client"
 version = "0.1.0"
 

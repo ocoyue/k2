@@ -6,23 +6,22 @@ use crate::orderbook::OrderBook;
 
 use event::{EngineEvent, Sequencer};
 
+use crate::recovery::RecoveredEngineState;
 use journal::JournalFile;
-use replay::replay_journal;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::{io, thread};
 
-pub fn start_engine(journal_path: impl AsRef<Path>) -> io::Result<EngineProxy> {
-    let journal_path = journal_path.as_ref();
+pub fn start_engine_loop(
+    recovered: RecoveredEngineState,
+    journal_path: impl AsRef<Path>,
+) -> io::Result<EngineProxy> {
+    let RecoveredEngineState {
+        book,
+        last_applied_seq,
+    } = recovered;
 
-    let mut book = OrderBook::new();
-
-    let last_applied_seq = replay_journal(journal_path, |sequenced_event| {
-        book.apply(sequenced_event.event());
-    })?;
-    println!("replay completed: as_of_seq={}", last_applied_seq);
     let sequencer = Sequencer::resume_after(last_applied_seq);
-
     let journal = JournalFile::open_or_create(journal_path)?;
 
     let (tx, rx) = mpsc::channel();
@@ -98,26 +97,65 @@ fn run_engine_loop(
         }
     }
 }
+
+// crates/orderbook-engine/src/engine_loop.rs
+
 #[cfg(test)]
 mod tests {
-    use super::start_engine;
+    use super::*;
+    use crate::recovery::recover_engine_state;
+    use event::{EngineEvent, SequencedEvent};
+    use journal::JournalFile;
+    use std::fs::remove_file;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn book_snapshot_reports_last_applied_event_seq() {
-        let proxy = start_engine("data/order.journal").unwrap();
+    fn engine_continues_sequence_after_recovery() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
 
-        proxy.add_order(1, "BTCUSDT".to_string(), 10);
+        let path = std::env::temp_dir().join(format!("engine-recovery-{unique}.journal"));
 
-        let first = proxy.get_book();
+        {
+            let mut journal = JournalFile::create_new(&path).unwrap();
 
-        assert_eq!(first.as_of_seq, 1);
+            journal
+                .append(&SequencedEvent::new(
+                    1,
+                    EngineEvent::OrderAdded {
+                        id: 1,
+                        symbol: "BTCUSDT".to_string(),
+                        qty: 10,
+                    },
+                ))
+                .unwrap();
 
-        proxy.add_order(2, "ETHUSDT".to_string(), 20);
+            journal
+                .append(&SequencedEvent::new(
+                    2,
+                    EngineEvent::OrderAdded {
+                        id: 2,
+                        symbol: "ETHUSDT".to_string(),
+                        qty: 20,
+                    },
+                ))
+                .unwrap();
+        }
 
-        let second = proxy.get_book();
+        let recovered = recover_engine_state(&path).unwrap();
+        let proxy = start_engine_loop(recovered, &path).unwrap();
 
-        assert_eq!(second.as_of_seq, 2);
+        let add_result = proxy.add_order(3, "SOLUSDT".to_string(), 30);
 
-        assert_eq!(second.orders.len(), 2);
+        assert_eq!(add_result.seq_id, 3);
+
+        let snapshot = proxy.get_book();
+
+        assert_eq!(snapshot.as_of_seq, 3);
+        assert_eq!(snapshot.orders.len(), 3);
+
+        remove_file(path).unwrap();
     }
 }
