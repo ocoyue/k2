@@ -180,7 +180,7 @@ Add journal between OrderCommand and apply .
 Restore OrderBook, last_applied_seq and Sequencer from persisted SequencedEvents before live processing begins.
 Existing Journal can now be replayed and safely continued, while sequence gaps reject startup.
 
-###### Trading System 008 replay
+###### Trading System 009 snapshot recovery 
 
 
 
