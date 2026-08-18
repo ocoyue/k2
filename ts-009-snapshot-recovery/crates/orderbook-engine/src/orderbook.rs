@@ -24,4 +24,7 @@ impl OrderBook {
     pub fn snapshot(&self) -> Vec<Order> {
         self.orders.clone()
     }
+    pub fn from_orders(orders: Vec<Order>) -> Self {
+        Self { orders }
+    }
 }

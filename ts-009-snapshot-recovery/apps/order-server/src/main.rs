@@ -5,10 +5,11 @@ use std::thread;
 
 const ADDRESS: &str = "127.0.0.1:9000";
 const JOURNAL_PATH: &str = "data/order.journal";
-
+const SNAPSHOT_PATH: &str = "data/order.snapshot";
 fn main() {
     // 1. Recovery Phase
-    let recovered = recover_engine_state(JOURNAL_PATH).expect("failed to recover engine state");
+    let recovered =
+        recover_engine_state(JOURNAL_PATH, SNAPSHOT_PATH).expect("failed to recover engine state");
 
     // 2. Runtime Phase
     let engine_proxy =

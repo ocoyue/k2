@@ -8,3 +8,4 @@ model.workspace = true
 event.workspace = true
 journal.workspace = true
 replay.workspace = true
+snapshot.workspace = true

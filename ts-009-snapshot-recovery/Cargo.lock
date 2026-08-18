@@ -69,6 +69,7 @@ dependencies = [
  "journal",
  "model",
  "replay",
+ "snapshot",
 ]
 
 [[package]]
