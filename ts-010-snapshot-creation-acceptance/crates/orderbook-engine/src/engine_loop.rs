@@ -1,5 +1,5 @@
 use crate::engine_message::{AddOrderResult, BookSnapshot, EngineCommand};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::EngineProxy;
 use crate::orderbook::OrderBook;
@@ -16,7 +16,15 @@ pub fn start_engine_loop(
     recovered: RecoveredEngineState,
     journal_path: impl AsRef<Path>,
     snapshot_path: impl AsRef<Path>,
+    checkpoint_interval: u64,
 ) -> io::Result<EngineProxy> {
+    if checkpoint_interval == 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "checkpoint interval must be greater than zero",
+        ));
+    }
+    let snapshot_path = snapshot_path.as_ref().to_path_buf();
     let RecoveredEngineState {
         book,
         last_applied_seq,
@@ -29,7 +37,7 @@ pub fn start_engine_loop(
         match journal.current_offset() {
             Ok(journal_offset) => {
                 if let Err(error) =
-                    create_checkpoint(snapshot_path, &book, last_applied_seq, journal_offset)
+                    create_checkpoint(&snapshot_path, &book, last_applied_seq, journal_offset)
                 {
                     eprintln!("bootstrap checkpoint failed: {error}");
                 }
@@ -44,7 +52,15 @@ pub fn start_engine_loop(
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        run_engine_loop(rx, journal, book, sequencer, last_applied_seq);
+        run_engine_loop(
+            rx,
+            journal,
+            book,
+            sequencer,
+            last_applied_seq,
+            snapshot_path,
+            checkpoint_interval,
+        );
     });
 
     Ok(EngineProxy::new(tx))
@@ -56,6 +72,8 @@ fn run_engine_loop(
     mut book: OrderBook,
     mut sequencer: Sequencer,
     mut last_applied_seq: u64,
+    snapshot_path: PathBuf,
+    checkpoint_interval: u64,
 ) {
     println!("engine thread: {:?}", thread::current().id());
 
@@ -112,5 +130,91 @@ fn run_engine_loop(
                 let _ = reply.send(result);
             }
         }
+        if last_applied_seq % checkpoint_interval == 0 {
+            match journal.current_offset() {
+                Ok(journal_offset) => {
+                    if let Err(error) =
+                        create_checkpoint(&snapshot_path, &book, last_applied_seq, journal_offset)
+                    {
+                        eprintln!("periodic checkpoint failed: {error}");
+                    }
+                }
+
+                Err(error) => {
+                    eprintln!("failed to read journal offset for checkpoint: {error}");
+                }
+            }
+        }
+    }
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::recover_engine_state;
+    use snapshot::SnapshotFile;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    #[test]
+    fn engine_creates_periodic_checkpoint() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        let journal_path = std::env::temp_dir().join(format!("periodic-{unique}.journal"));
+
+        let snapshot_path = std::env::temp_dir().join(format!("periodic-{unique}.snapshot"));
+
+        let recovered = recover_engine_state(&journal_path, &snapshot_path).unwrap();
+
+        let proxy = start_engine_loop(recovered, &journal_path, &snapshot_path, 2).unwrap();
+
+        proxy.add_order(1, "BTCUSDT".to_string(), 10);
+        proxy.add_order(2, "ETHUSDT".to_string(), 20);
+
+        for _ in 0..100 {
+            if snapshot_path.exists() {
+                break;
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
+
+        let snapshot = SnapshotFile::load(&snapshot_path).unwrap().unwrap();
+
+        assert_eq!(snapshot.as_of_seq(), 2);
+        assert_eq!(snapshot.orders().len(), 2);
+    }
+    #[test]
+    fn checkpoint_waits_for_next_interval() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        let journal_path = std::env::temp_dir().join(format!("interval-{unique}.journal"));
+
+        let snapshot_path = std::env::temp_dir().join(format!("interval-{unique}.snapshot"));
+
+        let recovered = recover_engine_state(&journal_path, &snapshot_path).unwrap();
+
+        let proxy = start_engine_loop(recovered, &journal_path, &snapshot_path, 2).unwrap();
+
+        proxy.add_order(1, "BTCUSDT".to_string(), 10);
+
+        assert!(!snapshot_path.exists());
+
+        proxy.add_order(2, "ETHUSDT".to_string(), 20);
+
+        for _ in 0..100 {
+            if snapshot_path.exists() {
+                break;
+            }
+
+            std::thread::sleep(Duration::from_millis(1));
+        }
+
+        let snapshot = SnapshotFile::load(&snapshot_path).unwrap().unwrap();
+
+        assert_eq!(snapshot.as_of_seq(), 2);
     }
 }

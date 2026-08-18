@@ -6,14 +6,18 @@ use std::thread;
 const ADDRESS: &str = "127.0.0.1:9000";
 const JOURNAL_PATH: &str = "data/order.journal";
 const SNAPSHOT_PATH: &str = "data/order.snapshot";
+
+const CHECKPOINT_INTERVAL: u64 = 2;
+
 fn main() {
     // 1. Recovery Phase
     let recovered =
         recover_engine_state(JOURNAL_PATH, SNAPSHOT_PATH).expect("failed to recover engine state");
 
     // 2. Runtime Phase
-    let engine_proxy = start_engine_loop(recovered, JOURNAL_PATH, SNAPSHOT_PATH)
-        .expect("failed to start engine loop");
+    let engine_proxy =
+        start_engine_loop(recovered, JOURNAL_PATH, SNAPSHOT_PATH, CHECKPOINT_INTERVAL)
+            .expect("failed to start engine loop");
 
     // 3. Network Bootstrap
     let listener = TcpListener::bind(ADDRESS).expect("failed to bind order server");
