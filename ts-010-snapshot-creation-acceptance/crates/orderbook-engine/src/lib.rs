@@ -15,6 +15,7 @@
 //!
 //! This is not a complete exchange matching engine.
 
+mod checkpoint;
 mod engine_loop;
 mod engine_message;
 mod engine_proxy;

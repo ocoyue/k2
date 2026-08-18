@@ -6,15 +6,16 @@ use crate::orderbook::OrderBook;
 
 use event::{EngineEvent, Sequencer};
 
+use crate::checkpoint::create_checkpoint;
 use crate::recovery::RecoveredEngineState;
 use journal::JournalFile;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::{io, thread};
-
 pub fn start_engine_loop(
     recovered: RecoveredEngineState,
     journal_path: impl AsRef<Path>,
+    snapshot_path: impl AsRef<Path>,
 ) -> io::Result<EngineProxy> {
     let RecoveredEngineState {
         book,
@@ -23,6 +24,22 @@ pub fn start_engine_loop(
 
     let sequencer = Sequencer::resume_after(last_applied_seq);
     let journal = JournalFile::open_or_create(journal_path)?;
+
+    if last_applied_seq > 0 {
+        match journal.current_offset() {
+            Ok(journal_offset) => {
+                if let Err(error) =
+                    create_checkpoint(snapshot_path, &book, last_applied_seq, journal_offset)
+                {
+                    eprintln!("bootstrap checkpoint failed: {error}");
+                }
+            }
+
+            Err(error) => {
+                eprintln!("failed to read journal offset for bootstrap checkpoint: {error}");
+            }
+        }
+    }
 
     let (tx, rx) = mpsc::channel();
 

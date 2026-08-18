@@ -177,41 +177,9 @@ impl JournalFile {
 
         Ok(())
     }
-    // pub fn read_all2(path: impl AsRef<Path>) -> io::Result<Vec<SequencedEvent>> {
-    //     let path = path.as_ref();
-    //
-    //     let file = match File::open(path) {
-    //         Ok(file) => file,
-    //
-    //         Err(error) if error.kind() == ErrorKind::NotFound => {
-    //             // 代表没有历史journal，从零建立
-    //             return Ok(Vec::new());
-    //         }
-    //
-    //         Err(error) => {
-    //             return Err(error);
-    //         }
-    //     };
-    //
-    //     let reader = BufReader::new(file);
-    //
-    //     let mut events = Vec::new();
-    //
-    //     for (line_index, line_result) in reader.lines().enumerate() {
-    //         let line = line_result?;
-    //
-    //         let event = decode_record(&line).map_err(|error| {
-    //             io::Error::new(
-    //                 ErrorKind::InvalidData,
-    //                 format!("journal line {}: {}", line_index + 1, error,),
-    //             )
-    //         })?;
-    //
-    //         events.push(event);
-    //     }
-    //
-    //     Ok(events)
-    // }
+    pub fn current_offset(&self) -> io::Result<u64> {
+        Ok(self.file.metadata()?.len())
+    }
 }
 fn validate_record_boundary(file: &mut File, offset: u64) -> io::Result<()> {
     if offset == 0 {
@@ -340,5 +308,35 @@ mod tests {
         assert_eq!(events[0].seq_id(), 3);
 
         remove_file(path).unwrap();
+    }
+    #[test]
+    fn current_offset_tracks_end_of_journal() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        let path = std::env::temp_dir().join(format!("journal-offset-{unique}.journal"));
+
+        let mut journal = JournalFile::create_new(&path).unwrap();
+
+        journal
+            .append(&SequencedEvent::new(
+                1,
+                EngineEvent::OrderAdded {
+                    id: 1,
+                    symbol: "BTCUSDT".to_string(),
+                    qty: 10,
+                },
+            ))
+            .unwrap();
+
+        let offset = journal.current_offset().unwrap();
+        let file_len = std::fs::metadata(&path).unwrap().len();
+
+        assert_eq!(offset, file_len);
+
+        drop(journal);
+        std::fs::remove_file(path).unwrap();
     }
 }

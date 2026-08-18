@@ -12,8 +12,8 @@ fn main() {
         recover_engine_state(JOURNAL_PATH, SNAPSHOT_PATH).expect("failed to recover engine state");
 
     // 2. Runtime Phase
-    let engine_proxy =
-        start_engine_loop(recovered, JOURNAL_PATH).expect("failed to start engine loop");
+    let engine_proxy = start_engine_loop(recovered, JOURNAL_PATH, SNAPSHOT_PATH)
+        .expect("failed to start engine loop");
 
     // 3. Network Bootstrap
     let listener = TcpListener::bind(ADDRESS).expect("failed to bind order server");
