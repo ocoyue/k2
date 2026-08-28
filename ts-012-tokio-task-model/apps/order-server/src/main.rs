@@ -30,17 +30,19 @@ async fn main() {
     loop {
         match listener.accept().await {
             Ok((stream, address)) => {
-                let proxy = engine_proxy.clone();
-
                 // 5. Session
                 println!("order client connected: {address}");
+
+                let proxy = engine_proxy.clone();
 
                 let handler = SimpleOrderHandler::new(proxy);
                 let session = OrderSession::new(stream, handler);
 
-                if let Err(error) = session.run().await {
-                    eprintln!("order session error: {error}");
-                }
+                tokio::spawn(async move {
+                    if let Err(error) = session.run().await {
+                        eprintln!("order session error: {error}");
+                    }
+                });
             }
             Err(error) => {
                 eprintln!("accept error: {error}");
