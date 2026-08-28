@@ -11,8 +11,7 @@ use crate::recovery::RecoveredEngineState;
 use journal::JournalFile;
 
 use std::{io, thread};
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{self, Receiver};
 
 const ENGINE_COMMAND_QUEUE_CAPACITY: usize = 8192;
 pub fn start_engine_loop(
@@ -222,5 +221,43 @@ mod test {
         let snapshot = SnapshotFile::load(&snapshot_path).unwrap().unwrap();
 
         assert_eq!(snapshot.as_of_seq(), 2);
+    }
+    #[tokio::test(flavor = "current_thread")]
+    async fn bounded_mpsc_applies_backpressure_when_full() {
+        let (sender, mut receiver) = mpsc::channel(1);
+
+        sender.send(10).await.unwrap();
+
+        let sender2 = sender.clone();
+
+        let send_handle = tokio::spawn(async move {
+            sender2.send(20).await.unwrap();
+        });
+
+        tokio::task::yield_now().await;
+
+        assert!(!send_handle.is_finished());
+
+        let first_value = receiver.recv().await;
+        assert_eq!(first_value, Some(10));
+
+        send_handle.await.unwrap();
+
+        let second_value = receiver.recv().await;
+        assert_eq!(second_value, Some(20));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn bounded_mpsc_try_send_reports_full() {
+        let (sender, _receiver) = tokio::sync::mpsc::channel(1);
+
+        sender.try_send(10).unwrap();
+
+        let result = sender.try_send(20);
+
+        assert!(matches!(
+        result,
+        Err(tokio::sync::mpsc::error::TrySendError::Full(20))
+    ));
     }
 }
