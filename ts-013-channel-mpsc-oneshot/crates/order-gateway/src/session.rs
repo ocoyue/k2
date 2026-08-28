@@ -39,7 +39,7 @@ where
             let request_result = OrderCodec::decode(frame.trim());
 
             let response = match request_result {
-                Ok(request) => handler.handle(request),
+                Ok(request) => handler.handle(request).await,
                 Err(message) => OrderResponse::Error { message },
             };
 

@@ -1,17 +1,16 @@
 use model::Order;
-use std::sync::mpsc::Sender;
+use tokio::sync::oneshot;
 
-#[derive(Debug)]
 pub(crate) enum EngineCommand {
     AddOrder {
         id: u64,
         symbol: String,
         qty: u64,
-        reply: Sender<AddOrderResult>,
+        reply: oneshot::Sender<AddOrderResult>,
     },
 
     GetBook {
-        reply: Sender<BookSnapshot>,
+        reply: oneshot::Sender<BookSnapshot>,
     },
 }
 pub struct AddOrderResult {

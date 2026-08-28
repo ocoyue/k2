@@ -9,9 +9,12 @@ use event::{EngineEvent, Sequencer};
 use crate::checkpoint::create_checkpoint;
 use crate::recovery::RecoveredEngineState;
 use journal::JournalFile;
-use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
+
 use std::{io, thread};
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::Receiver;
+
+const ENGINE_COMMAND_QUEUE_CAPACITY: usize = 8192;
 pub fn start_engine_loop(
     recovered: RecoveredEngineState,
     journal_path: impl AsRef<Path>,
@@ -49,7 +52,7 @@ pub fn start_engine_loop(
         }
     }
 
-    let (tx, rx) = mpsc::channel();
+    let (tx, rx) = mpsc::channel(ENGINE_COMMAND_QUEUE_CAPACITY);
 
     thread::spawn(move || {
         run_engine_loop(
@@ -67,7 +70,7 @@ pub fn start_engine_loop(
 }
 
 fn run_engine_loop(
-    receiver: Receiver<EngineCommand>,
+    mut receiver: Receiver<EngineCommand>,
     mut journal: JournalFile,
     mut book: OrderBook,
     mut sequencer: Sequencer,
@@ -77,7 +80,7 @@ fn run_engine_loop(
 ) {
     println!("engine thread: {:?}", thread::current().id());
 
-    while let Ok(command) = receiver.recv() {
+    while let Some(command) = receiver.blocking_recv() {
         match command {
             EngineCommand::AddOrder {
                 id,
@@ -153,8 +156,9 @@ mod test {
     use crate::recover_engine_state;
     use snapshot::SnapshotFile;
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
-    #[test]
-    fn engine_creates_periodic_checkpoint() {
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn engine_creates_periodic_checkpoint() {
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -168,15 +172,16 @@ mod test {
 
         let proxy = start_engine_loop(recovered, &journal_path, &snapshot_path, 2).unwrap();
 
-        proxy.add_order(1, "BTCUSDT".to_string(), 10);
-        proxy.add_order(2, "ETHUSDT".to_string(), 20);
+        proxy.add_order(1, "BTCUSDT".to_string(), 10).await;
+
+        proxy.add_order(2, "ETHUSDT".to_string(), 20).await;
 
         for _ in 0..100 {
             if snapshot_path.exists() {
                 break;
             }
 
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::sleep(Duration::from_millis(1));
         }
 
         let snapshot = SnapshotFile::load(&snapshot_path).unwrap().unwrap();
@@ -184,8 +189,9 @@ mod test {
         assert_eq!(snapshot.as_of_seq(), 2);
         assert_eq!(snapshot.orders().len(), 2);
     }
-    #[test]
-    fn checkpoint_waits_for_next_interval() {
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn checkpoint_waits_for_next_interval() {
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -199,11 +205,11 @@ mod test {
 
         let proxy = start_engine_loop(recovered, &journal_path, &snapshot_path, 2).unwrap();
 
-        proxy.add_order(1, "BTCUSDT".to_string(), 10);
+        proxy.add_order(1, "BTCUSDT".to_string(), 10).await;
 
         assert!(!snapshot_path.exists());
 
-        proxy.add_order(2, "ETHUSDT".to_string(), 20);
+        proxy.add_order(2, "ETHUSDT".to_string(), 20).await;
 
         for _ in 0..100 {
             if snapshot_path.exists() {
