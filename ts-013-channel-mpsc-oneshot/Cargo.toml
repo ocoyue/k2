@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "apps/market-server",
+    "apps/order-server",
+    "apps/test-client",
+
+    "crates/common",
+    "crates/event",
+    "crates/instrument",
+    "crates/journal",
+    "crates/market-data-engine",
+    "crates/market-gateway",
+    "crates/model",
+    "crates/order-gateway",
+    "crates/orderbook-engine",
+    "crates/protocol",
+    "crates/replay",
+    "crates/snapshot",
+    "crates/transport",
+]
+
+[workspace.dependencies]
+event = { path = "crates/event" }
+instrument = { path = "crates/instrument" }
+journal = { path = "crates/journal" }
+market-gateway = { path = "crates/market-gateway" }
+model = { path = "crates/model" }
+order-gateway = { path = "crates/order-gateway" }
+orderbook-engine = { path = "crates/orderbook-engine" }
+protocol = { path = "crates/protocol" }
+replay = { path = "crates/replay" }
+snapshot = { path = "crates/snapshot" }
+tokio = { version = "1", features = ["rt", "macros", "net", "io-util", "sync"] }
